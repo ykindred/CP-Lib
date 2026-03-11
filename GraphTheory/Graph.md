@@ -51,7 +51,50 @@ int main()
         cout << "\n";
     }
 }
+```
+# 树
+## 树的直径
+```cpp
+#include<bits/stdc++.h>
+using namespace std;
 
+void dfs(int u,int fa,int &c,vector<int>&d,const vector<vector<int>>&g)
+{
+    for(int v:g[u])
+    {
+        if(v==fa) continue;
+        d[v]=d[u]+1;
+        if(d[v]>d[c]) c=v;
+        dfs(v,u,c,d,g);
+    }
+}
+
+int main()
+{
+    int n;
+    cin>>n;
+
+    vector<vector<int>> g(n+1);
+    vector<int> d(n+1,0);
+
+    for(int i=1;i<n;i++)
+    {
+        int x,y;
+        cin>>x>>y;
+        g[x].push_back(y);
+        g[y].push_back(x);
+    }
+
+    int c=1;
+
+    dfs(1,0,c,d,g);
+
+    d[c]=0;
+    dfs(c,0,c,d,g);
+
+    cout<<d[c]<<endl;
+}
+```
 
 
 
