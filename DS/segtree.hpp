@@ -11,7 +11,7 @@ struct SegTree {
     }
     void build(const vector<S>& arr) {
         n = arr.size();
-        d.assign(4 * arr.size(), S());
+        d.assign(4 * n, S());
         build(0, 0, n, arr);
     }
     void set(int p, const S& val) {
