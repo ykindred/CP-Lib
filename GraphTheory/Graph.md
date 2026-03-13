@@ -95,6 +95,72 @@ int main()
     cout<<d[c]<<endl;
 }
 ```
+## 倍增LCA
+```cpp
+#include<bits/stdc++.h>
+using namespace std;
+int n,q;
+vector<vector<int>>anc,g;
+vector<int>d;
+void dfs(int u,int fa)
+{
+    for(int v:g[u])
+    {
+        if(fa==v)continue;
+        d[v]=d[u]+1;
+        dfs(v,u);
+    }
+}
+int lca(int a,int b)
+{
+    if(d[a]<d[b])swap(a,b);
+    int dif=d[a]-d[b];
+    for(int i=0;i<31;i++)
+    {
+        if(dif&(1<<i))a=anc[a][i];
+    }
+    if(a==b)return a;
+    for(int i=30;i>=0;i--)
+    {
+         if(anc[a][i]!=anc[b][i])
+        {
+           a=anc[a][i];
+           b=anc[b][i];
+        }
+    }
+    return anc[a][0];
+}
+int main()
+{
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    cin>>n>>q;
+    anc.resize(n+1,vector(32,0));
+    g.resize(n+1);
+    d.resize(n+1,0);
+    for(int i=2;i<=n;i++)
+    {
+        cin>>anc[i][0];
+        g[i].push_back(anc[i][0]);
+        g[anc[i][0]].push_back(i);
+    }
+    dfs(1,0);
+    for(int i=1;i<31;i++)
+    {
+        for(int k=1;k<=n;k++)
+        {
+            if(!anc[k][i-1])anc[k][i]=0;
+            else anc[k][i]=anc[anc[k][i-1]][i-1];
+        }
+    }
+    while(q--)
+    {
+        int a,b;
+        cin>>a>>b;
+        cout<<lca(a,b)<<endl;
+    }
+}
+```
 
 
 
