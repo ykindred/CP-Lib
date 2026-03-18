@@ -189,6 +189,7 @@ void tarjan(int u)
     if(low[u]==dfn[u])
     {
         vector<int>num;
+        sccnum++;
         while(!s.empty())
         {
             int x=s.top();
@@ -199,7 +200,6 @@ void tarjan(int u)
             if(x==u)break;
         }
         scc.push_back(num);
-        sccnum++;
     }
 
 }
