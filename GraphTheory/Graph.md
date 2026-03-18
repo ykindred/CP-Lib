@@ -161,6 +161,75 @@ int main()
     }
 }
 ```
+# Tarjan
+```cpp
+#include<bits/stdc++.h>
+using namespace std;
+vector<vector<int>>g,scc;
+vector<int>dfn,low,sccid;
+stack<int>s;
+vector<bool>instk;
+int n,m,Time=0,sccnum=0;
+void tarjan(int u)
+{
+    dfn[u]=low[u]=++Time;
+    s.push(u);
+    instk[u]=1;
+    for(int v:g[u])
+    {
+        if(!dfn[v])
+        {
+            tarjan(v);
+            low[u]=min(low[u],low[v]);
+        }
+        else if(instk[v])
+        low[u]=min(low[u],dfn[v]);
+    }
+    if(low[u]==dfn[u])
+    {
+        vector<int>num;
+        while(!s.empty())
+        {
+            int x=s.top();
+            s.pop();
+            instk[x]=0;
+            sccid[x]=sccnum;
+            num.push_back(x);
+            if(x==u)break;
+        }
+        scc.push_back(num);
+        sccnum++;
+    }
+
+}
+int main()
+{
+    cin>>n>>m;
+    g.resize(n+1);
+    dfn.resize(n+1,0);
+    low.resize(n+1,0);
+    instk.resize(n+1,0);
+    sccid.resize(n+1, 0);
+    for(int i=1;i<=m;i++)
+    {
+        int x,y;
+        cin>>x>>y;
+        g[x].push_back(y);
+    }
+    for(int i=0;i<n;i++)
+    {
+        if(!dfn[i])tarjan(i);
+    }
+    reverse(scc.begin(), scc.end());
+    cout<<sccnum<<'\n';
+    for(auto&num:scc)
+    {
+        cout<<num.size()<<' ';
+        for(int v:num)cout<<v<<' ';
+        cout<<'\n';
+    }
+}
+```
 
 
 
