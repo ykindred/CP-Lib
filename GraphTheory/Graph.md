@@ -217,7 +217,7 @@ int main()
         cin>>x>>y;
         g[x].push_back(y);
     }
-    for(int i=0;i<n;i++)
+    for(int i=1;i=<n;i++)
     {
         if(!dfn[i])tarjan(i);
     }
