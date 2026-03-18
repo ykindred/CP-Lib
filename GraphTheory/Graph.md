@@ -162,6 +162,7 @@ int main()
 }
 ```
 # Tarjan
+## SCC
 ```cpp
 #include<bits/stdc++.h>
 using namespace std;
