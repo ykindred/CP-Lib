@@ -251,6 +251,8 @@ void tarjan(int u,int fedg)
         {
             tarjan(v,id);
             low[u]=min(low[v],low[u]);
+            if (low[v] > dfn[u])
+            edg[id]=1;
         }
         else if(id!=fedg)
         low[u]=min(dfn[v],low[u]);
@@ -263,7 +265,7 @@ void dfs(int u)
     ans[ansnum].push_back(u);
     for(auto [v,id]:g[u])
     {
-        if(!edg[id])continue;
+        if(edg[id])continue;
         if(!vis[v])dfs(v);
     }
 }
@@ -274,7 +276,7 @@ int main()
     dfn.resize(n+1,0);
     low.resize(n+1,0);
     instk.resize(n+1,0);
-    edg.resize(m+1,1);
+    edg.resize(m+1,0);
     ans.resize(n+1);
     vis.resize(n+1,0);
     for(int i=1;i<=m;i++)
@@ -286,14 +288,6 @@ int main()
     }
     for(int i=1;i<=n;i++)
     if(!dfn[i])tarjan(i,-1);
-    for(int i=1;i<=n;i++)
-    {
-        for(auto [v,id]:g[i])
-        {
-            if(dfn[i]<low[v])
-            edg[id]=0;
-        }
-    }
     for(int i=1;i<=n;i++)
     {
         if(!vis[i])
