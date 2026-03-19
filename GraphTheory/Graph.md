@@ -231,6 +231,86 @@ int main()
     }
 }
 ```
+## 无向图割边
+```cpp
+#include<bits/stdc++.h>
+using namespace std;
+int n,m;
+vector<vector<pair<int,int>>>g;
+vector<vector<int>>ans;
+vector<int>dfn,low,instk,edg,vis;
+int Time=0,ansnum=0;
+stack<int>s;
+void tarjan(int u,int fa)
+{
+    dfn[u]=low[u]=++Time;
+    
+    for(auto [v,id]:g[u])
+    {
+        if(!dfn[v])
+        {
+            tarjan(v,u);
+            low[u]=min(low[v],low[u]);
+        }
+        else if(v!=fa)
+        low[u]=min(dfn[v],low[u]);
+    }
+}
+void dfs(int u)
+{
+    vis[u]=1;
+    
+    ans[ansnum].push_back(u);
+    for(auto [v,id]:g[u])
+    {
+        if(!edg[id])continue;
+        if(!vis[v])dfs(v);
+    }
+}
+int main()
+{
+    cin>>n>>m;
+    g.resize(n+1);
+    dfn.resize(n+1,0);
+    low.resize(n+1,0);
+    instk.resize(n+1,0);
+    edg.resize(m+1,1);
+    ans.resize(n+1);
+    vis.resize(n+1,0);
+    for(int i=1;i<=m;i++)
+    {
+        int a,b;
+        cin>>a>>b;
+        g[a].push_back({b,i});
+        g[b].push_back({a,i});
+    }
+    for(int i=1;i<=n;i++)
+    if(!dfn[i])tarjan(i,-1);
+    for(int i=0;i<n;i++)
+    {
+        for(auto [v,id]:g[i])
+        {
+            if(dfn[i]<low[v])
+            edg[id]=0;
+        }
+    }
+    for(int i=1;i<=n;i++)
+    {
+        if(!vis[i])
+        {
+            ansnum++;
+            dfs(i);
+        }
+    }
+    cout<<ansnum<<'\n';
+    for(int i=1;i<=ansnum;i++)
+    {
+        cout<<ans[i].size()<<' ';
+        for(int v:ans[i])cout<<v<<' ';
+        cout<<'\n';
+    }
+}
+```
 
 
 
