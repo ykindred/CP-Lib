@@ -241,7 +241,7 @@ vector<vector<int>>ans;
 vector<int>dfn,low,instk,edg,vis;
 int Time=0,ansnum=0;
 stack<int>s;
-void tarjan(int u,int fa)
+void tarjan(int u,int fedg)
 {
     dfn[u]=low[u]=++Time;
     
@@ -249,10 +249,10 @@ void tarjan(int u,int fa)
     {
         if(!dfn[v])
         {
-            tarjan(v,u);
+            tarjan(v,id);
             low[u]=min(low[v],low[u]);
         }
-        else if(v!=fa)
+        else if(id!=fedg)
         low[u]=min(dfn[v],low[u]);
     }
 }
