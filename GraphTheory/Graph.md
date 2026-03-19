@@ -231,7 +231,7 @@ int main()
     }
 }
 ```
-## 无向图割边
+## 割边
 ```cpp
 #include<bits/stdc++.h>
 using namespace std;
