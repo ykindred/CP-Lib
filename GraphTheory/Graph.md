@@ -305,6 +305,71 @@ int main()
     }
 }
 ```
+## 割点
+```cpp
+#include<bits/stdc++.h>
+using namespace std;
+
+int n,m;
+vector<vector<pair<int,int>>> g;
+vector<int> dfn, low;
+vector<int> iscut;   
+int Time = 0;
+
+void tarjan(int u, int fa)
+{
+    dfn[u] = low[u] = ++Time;
+    int child = 0;   
+
+    for(auto [v,id] : g[u])
+    {
+        if(!dfn[v])
+        {
+            child++;
+            tarjan(v, u);
+            low[u] = min(low[u], low[v]);
+            if(fa!= -1 && low[v] >= dfn[u])
+                iscut[u] = 1;
+        }
+        else if(v !=fa)
+            low[u] = min(low[u], dfn[v]);
+        
+    }
+
+   
+    if(fa == -1 && child >= 2)
+        iscut[u] = 1;
+}
+
+int main()
+{
+    cin >> n >> m;
+
+    g.resize(n+1);
+    dfn.resize(n+1,0);
+    low.resize(n+1,0);
+    iscut.resize(n+1,0);
+
+    for(int i=1;i<=m;i++)
+    {
+        int a,b;
+        cin>>a>>b;
+        g[a].push_back({b,i});
+        g[b].push_back({a,i});
+    }
+
+    for(int i=1;i<=n;i++)
+    if(!dfn[i])tarjan(i, -1);
+
+    int ans = 0;
+    for(int i=1;i<=n;i++)
+        if(iscut[i]) ans++;
+
+    cout << ans << '\n';
+
+    return 0;
+}
+```
 
 
 
