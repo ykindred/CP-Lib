@@ -370,6 +370,97 @@ int main()
     return 0;
 }
 ```
+# 网络流
+## 最大流/最小割
+```cpp
+#include <bits/stdc++.h>
+#define ll  long long
+using namespace std;
+struct Edge {
+    int to;
+    ll cap;
+    int rev; 
+};
+vector<vector<Edge>> G;
+vector<int>level,cur;
+void add_edge(int u, int v, ll c) 
+{
+    G[u].push_back({v, c, (int)G[v].size()});
+    G[v].push_back({u, 0, (int)G[u].size() - 1});
+}
+bool bfs(int s, int t) 
+{
+    fill(level.begin(), level.end(), -1);
+    queue<int> q;
+    level[s] = 0;
+    q.push(s);
+
+    while (!q.empty()) 
+    {
+        int u = q.front(); q.pop();
+        for (auto &e : G[u]) 
+        {
+            if (e.cap > 0 && level[e.to] == -1) 
+            {
+                level[e.to] = level[u] + 1;
+                q.push(e.to);
+            }
+        }
+    }
+    return level[t] != -1;
+}
+
+ll dfs(int u, int t, ll flow) 
+{
+    if (u == t) return flow;
+    for (int &i = cur[u]; i < G[u].size(); i++) 
+    {
+        auto &e = G[u][i];
+        if (e.cap > 0 && level[e.to] == level[u] + 1) {
+            ll f = dfs(e.to, t, min(flow, e.cap));
+            if (f > 0) {
+                e.cap -= f;
+                G[e.to][e.rev].cap += f;
+                return f;
+            }
+        }
+    }
+    return 0;
+}
+
+ll maxflow(int s, int t) 
+{
+    ll flow = 0;
+    while (bfs(s, t)) 
+    {
+        fill(cur.begin(), cur.end(), 0);
+        while (ll f = dfs(s, t, LLONG_MAX)) 
+            flow += f;
+        
+    }
+    return flow;
+}
+
+int main() 
+{
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n, m;
+    cin >> n >> m;
+    level.resize(n+1,0);
+    cur.resize(n+1,0);
+    G.resize(n+1);
+    for (int i = 1; i <= m; i++) 
+    {
+        int a, b;
+        ll c;
+        cin >> a >> b >> c;
+        add_edge(a, b, c);
+    }
+    cout << maxflow(1, n) << '\n';
+    return 0;
+}
+```
 
 
 
