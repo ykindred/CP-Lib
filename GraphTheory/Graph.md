@@ -509,7 +509,8 @@ int main()
     {
         if (vis[e.u] && !vis[e.v]) 
             cout << e.u << " " << e.v << '\n';
-        
+        else if (vis[e.v] && !vis[e.u])
+            cout << e.v << " " << e.u << '\n';
     }
     return 0;
 }
