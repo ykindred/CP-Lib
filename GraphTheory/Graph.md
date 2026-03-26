@@ -461,6 +461,59 @@ int main()
     return 0;
 }
 ```
+### 可加入记录最小割边
+```cpp
+struct InputEdge {
+    int u, v;
+};
+vector<InputEdge> edges;
+vector<int> vis;
+
+void bfs_s(int s) {
+    fill(vis.begin(), vis.end(), 0);
+    queue<int> q;
+    q.push(s);
+    vis[s] = 1;
+
+    while (!q.empty()) {
+        int u = q.front(); q.pop();
+        for (auto &e : G[u]) {
+            if (e.cap > 0 && !vis[e.to]) {
+                vis[e.to] = 1;
+                q.push(e.to);
+            }
+        }
+    }
+}
+int main() 
+{
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n, m;
+    cin >> n >> m;
+    level.resize(n+1,0);
+    cur.resize(n+1,0);
+    G.resize(n+1);
+    vis.resize(n+1,0);
+    for (int i = 1; i <= m; i++) 
+    {
+        int a, b;
+        ll c;
+        cin >> a >> b ;
+        add_edge(a, b, 1);
+        edges.push_back({a, b}); 
+    }
+    cout << maxflow(1, n) << '\n';
+    bfs_s(1);
+    for (auto &e : edges) 
+    {
+        if (vis[e.u] && !vis[e.v]) 
+            cout << e.u << " " << e.v << '\n';
+        
+    }
+    return 0;
+}
+```
 
 
 
