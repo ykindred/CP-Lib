@@ -161,6 +161,87 @@ int main()
     }
 }
 ```
+## 树上启发式合并
+```cpp
+#include<bits/stdc++.h>
+using namespace std;
+vector<int>siz,hson,color,ans;
+unordered_map<int,int>cnt;
+vector<vector<int>>g;
+int dist=0;
+void dfs1(int u,int fa)
+{
+    siz[u]=1;
+    for(int v:g[u])
+    {
+        if(v==fa)continue;
+        dfs1(v,u);
+        siz[u]+=siz[v];
+        if(siz[v]>siz[hson[u]])hson[u]=v;
+    }
+}
+void add(int u,int fa)
+{
+    if(!cnt[color[u]])dist++;
+    cnt[color[u]]++;
+    for(int v:g[u])
+    {
+        if(v==fa)continue;
+        add(v,u);
+    }
+}
+void remove(int u,int fa)
+{
+    cnt[color[u]]--;
+    if(!cnt[color[u]])dist--;
+    for(int v:g[u])
+    {
+        if(v==fa)continue;
+        remove(v,u);
+    }
+}
+void dfs2(int u,int fa,bool keep)
+{
+    for(int v:g[u])
+    {
+        if(v==hson[u]||v==fa)continue;
+        dfs2(v,u,false);
+    }
+    if(hson[u])dfs2(hson[u],u,true);
+    for(int v:g[u])
+    {
+        if(v==hson[u]||v==fa)continue;
+        add(v,u);
+    }
+    if(!cnt[color[u]]) dist++;
+    cnt[color[u]]++;
+    ans[u]=dist;
+    if(!keep)remove(u,fa);
+}
+int main()
+{
+    int n;
+    cin>>n;
+    color.resize(n+1,0);
+    ans.resize(n+1,0);
+    for(int i=1;i<=n;i++)cin>>color[i];
+    g.resize(n+1);
+    //cnt.resize(1e9+7,0);
+    for(int i=1;i<n;i++)
+    {
+        int x,y;
+        cin>>x>>y;
+        g[x].push_back(y);
+        g[y].push_back(x);
+    }
+    siz.resize(n+1,0);
+    hson.resize(n+1,0);
+    dfs1(1,0);
+    dfs2(1,0,false);
+    for(int i=1;i<=n;i++)cout<<ans[i]<<' ';
+    cout<<'\n';
+}
+```
 # Tarjan
 ## SCC
 ```cpp
