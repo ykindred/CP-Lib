@@ -95,6 +95,44 @@ int main()
     cout<<d[c]<<endl;
 }
 ```
+## 树的重心
+```cpp
+#include<bits/stdc++.h>
+using namespace std;
+int n;
+vector<vector<int>>g;
+vector<int>siz,wei;
+int ans;
+void dfs(int u,int fa)
+{
+    siz[u]=1;
+    for(int v:g[u])
+    {
+        if(v==fa)continue;
+        dfs(v,u);
+        siz[u]+=siz[v];
+        wei[u]=max(wei[u],siz[v]);
+    }
+    wei[u]=max(wei[u],n-siz[u]);
+    if(wei[u]<=n/2)ans=u;
+}
+int main()
+{
+    cin>>n;
+    g.resize(n+1);
+    siz.resize(n+1,0);
+    wei.resize(n+1,0);
+    for(int i=1;i<n;i++)
+    {
+        int x,y;
+        cin>>x>>y;
+        g[x].push_back(y);
+        g[y].push_back(x);
+    }
+    dfs(1,0);
+    cout<<ans<<endl;
+}
+```
 ## 倍增LCA
 ```cpp
 #include<bits/stdc++.h>
