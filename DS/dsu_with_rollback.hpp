@@ -51,7 +51,7 @@ void dsu_with_rollback::undo(){
     }else{
         auto &[u,v] = st.top();
         st.pop();
-        if(u==v==-1) return;
+        if(u==-1&&v==-1) return;
         rank[v] -=rank[u];
         fa[u] = u;
     }
