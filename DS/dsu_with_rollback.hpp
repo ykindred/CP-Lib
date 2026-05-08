@@ -30,8 +30,10 @@ else{
 void dsu_with_rollback::unite(int x,int y){
     //按秩合并
     int fx = find(x),fy = find(y);
-    if(fx==fy)
+    if(fx==fy){
+        st.push({-1,-1});
         return;
+    }
     if(rank[fx]<rank[fy]){
         rank[fy] +=rank[fx];
         fa[fx] = fy;
@@ -49,6 +51,7 @@ void dsu_with_rollback::undo(){
     }else{
         auto &[u,v] = st.top();
         st.pop();
+        if(u==v==-1) return;
         rank[v] -=rank[u];
         fa[u] = u;
     }
