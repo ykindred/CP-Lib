@@ -81,3 +81,4 @@ ll persistent_segment_tree::query(int tk,int tl,int tr){
 void persistent_segment_tree::copy(int o){
     this->h[++cntarray] = h[o];
 }
+//Written by Pilocode
