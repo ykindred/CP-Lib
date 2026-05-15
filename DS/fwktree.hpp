@@ -1,44 +1,48 @@
-#include <bits/stdc++.h>
-using namespace std;
-using ll = long long;
-inline int lowbit(int x) {
-    return x & -x;
-}
-template <class S>
-struct FwkTree {
+template <typename T>
+class FenWick
+{
+private:
+    vector<T> BIT;
+    T lowbit(T x);
     int n;
-    vector<S> d;
-    FwkTree(int n = 0, S def = S()) : n(n), d(n + 1, def) {}
-    FwkTree(const vector<S>& arr) {
-        build(arr);
-    }
-    void build(const vector<S>& arr) {
-        n = arr.size();
-        d.assign(n + 1, S());
-        for (int i = 1; i <= n; i++) {
-            d[i] = arr[i - 1];
-        }
-        for (int i = 1; i <= n; i++) {
-            int pa = i + lowbit(i);
-            if (pa <= n) {
-                d[pa] = d[pa] + d[i];
-            }
-        }
-    }
 
-    void add(int pos, S val) {
-        for (pos++; pos <= n; pos += lowbit(pos)) {
-            d[pos] = d[pos] + val;
-        }
+public:
+    FenWick(T n) : n(n)
+    {
+        this->BIT.resize(n, 0);
     }
-    S sum(int pos) {
-        S res = S();
-        for (pos++; pos > 0; pos -= lowbit(pos)) {
-            res = res + d[pos];
-        }
-        return res;
+    FenWick(vector<T> &ori) : FenWick(ori.size())
+    {
+        this->BIT = ori;
     }
-    S query(int l, int r) {
-        return sum(r - 1) - sum(l - 1);
-    }
+    void set(int poi, T value);
+    T query(int poi);
+    T query(int l, int r);
 };
+template <typename T>
+T FenWick<T>::lowbit(T x)
+{
+    return x & (-x);
+}
+template <typename T>
+void FenWick<T>::set(int poi, T value)
+{
+    for (; poi < n; poi += (lowbit(poi)))
+        (this->BIT[poi]) += value;
+    return;
+}
+template <typename T>
+T FenWick<T>::query(int poi)
+{
+    T ans = 0;
+    for (; poi > 0; poi -= lowbit(poi))
+    {
+        ans += (this->BIT)[poi];
+    }
+    return ans;
+}
+template <typename T>
+T FenWick<T>::query(int l, int r)
+{
+    return (this->query(r) - this->query(l - 1));
+}
