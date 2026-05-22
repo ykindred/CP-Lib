@@ -1674,3 +1674,458 @@ vector<Z> many_factorials(const vector<int>& q) {
     return ans;
 }
 ```
+
+## 线性代数
+### 矩阵和列向量
+```cpp
+template <class S, int N>
+struct ColVector {
+    array<S, N> a;
+    ColVector(S def = S()) {
+        fill(a.begin(), a.end(), def);
+    }
+    
+    S& operator[](int i) {
+        return a[i];
+    }
+    const S& operator[](int i) const {
+        return a[i];
+    }
+};
+
+template <typename S, int N>
+struct Matrix {
+    array<array<S, N>, N> a;
+    Matrix(S def = S()) {
+        for (int i = 0; i < N; i++) {
+            fill(a[i].begin(), a[i].end(), def);
+        }
+    }
+    using M = Matrix;
+
+    S* operator[](int i) {
+        return a[i].data();
+    }
+    const S* operator[](int i) const {
+        return a[i].data();
+    }
+    
+    // 单位矩阵
+    constexpr static M e() {
+        M ret;
+        for (int i = 0; i < N; i++) {
+            ret[i][i] = 1;
+        }
+        return ret;
+    }
+    
+    // 加法
+    friend M operator+(M lt, const M& rt) {
+        for (int i = 0; i < N; i++) {
+            for (int j = 0; j < N; j++) {
+                lt[i][j] += rt[i][j];
+            }
+        }
+        return lt;
+    }
+
+    // 乘法
+    friend M operator*(const M& lt, const M& rt) {
+        M ret;
+        for (int i = 0; i < N; i++) {
+            for (int k = 0; k < N; k++) {
+                if (lt[i][k] == S()) {
+                    continue;
+                }
+                
+                for (int j = 0; j < N; j++) {
+                    ret[i][j] += lt[i][k] * rt[k][j];
+                }
+            }
+        }
+        return ret;
+    }
+
+    M pow(ll b) const {
+        M ret = e();
+        M t = *this;
+        while (b > 0) {
+            if (b & 1) {
+                ret = ret * t;
+            }
+            
+            t = t * t;
+            b >>= 1;
+        }
+        return ret;
+    }
+
+    ColVector<S, N> operator*(const ColVector<S, N>& vec) {
+        ColVector<S, N> ret;
+        for (int i = 0; i < N; i++) {
+            for (int k = 0; k < N; k++) {
+                if (a[i][k] == S()) {
+                    continue;
+                }
+                
+                ret[i] = ret[i] + (a[i][k] * vec[k]);
+            }
+        }
+        return ret;
+    }
+};
+
+template <int N>
+struct Matrix_mp {
+    array<array<ll, N>, N> a;
+    Matrix_mp() {
+        for (int i = 0; i < N; i++) {
+            fill(a[i].begin(), a[i].end(), INFLL);
+        }
+    }
+
+    ll* operator[](int i) {
+        return a[i].data();
+    }
+    const ll* operator[](int i) const {
+        return a[i].data();
+    }
+    
+    static Matrix_mp e() {
+        Matrix_mp ret;
+        for (int i = 0; i < N; i++) {
+            ret[i][i] = 0;
+        }
+        return ret;
+    }
+    
+    friend Matrix_mp operator+(Matrix_mp lt, const Matrix_mp& rt) {
+        for (int i = 0; i < N; i++) {
+            for (int j = 0; j < N; j++) {
+                lt[i][j] = min(lt[i][j], rt[i][j]);
+            }
+        }
+        return lt;
+    }
+    friend Matrix_mp operator*(const Matrix_mp& lt, const Matrix_mp& rt) {
+        Matrix_mp ret;
+        for (int i = 0; i < N; i++) {
+            for (int k = 0; k < N; k++) {
+                if (lt[i][k] >= INFLL) {
+                    continue;
+                }
+                
+                for (int j = 0; j < N; j++) {
+                    ll now;
+                    if (rt[k][j] >= INFLL) {
+                        now = INFLL;
+                    } else {
+                        now = lt[i][k] + rt[k][j];
+                    }
+                    ret[i][j] = min(ret[i][j], now);
+                }
+            }
+        }
+        return ret;
+    }
+    
+    Matrix_mp pow(ll b) const {
+        Matrix_mp ret = e();
+        Matrix_mp t = *this;
+        while (b > 0) {
+            if (b & 1) {
+                ret = ret * t;
+            }
+            
+            t = t * t;
+            b >>= 1;
+        }
+        return ret;
+    }
+    
+    ColVector<ll, N> operator*(const ColVector<ll, N>& vec) {
+        ColVector<ll, N> ret(INFLL);
+        for (int i = 0; i < N; i++) {
+            for (int k = 0; k < N; k++) {
+                if (a[i][k] >= INFLL) {
+                    continue;
+                }
+                ll now;
+                if (a[i][k] >= INFLL || vec[k] >= INFLL) {
+                    now = INFLL;
+                } else {
+                    now = a[i][k] + vec[k];
+                }
+                ret[i] = min(ret[i], now);
+            }
+        }
+        return ret;
+    }
+};
+```
+
+### 高斯消元(整数)
+```cpp
+template <typename S, int N>
+struct GaussJordan {
+    Matrix<S, N> A;
+    ColVector<S, N> x;
+    ColVector<S, N> b;
+    
+    int solve(int n, int m) {
+        int r = 0;
+        for (int c = 0; r < n && c < m; c++) {
+            int pivot = r;
+            while (pivot < n && A[pivot][c] == S()) {
+                pivot++;
+            }
+            if (pivot == n) {
+                continue;
+            }
+            if (pivot != r) {
+                swap(A.a[pivot], A.a[r]);
+                swap(b.a[pivot], b.a[r]);
+            }
+            S inv = S(1) / A[r][c];
+            for (int j = c; j < m; j++) {
+                A[r][j] = A[r][j] * inv;
+            }
+            b[r] = b[r] * inv;
+            
+            for (int i = 0; i < n; i++) {
+                if (i != r && A[i][c] != S()) {
+                    S factor = A[i][c];
+                    for (int j = c; j < m; j++) {
+                        A[i][j] = A[i][j] - factor * A[r][j];
+                    }
+                    b[i] = b[i] - factor * b[r];
+                }
+            }
+            r++;
+        }
+        
+        for (int i = r; i < n; i++) {
+            if (b[i] != S()) {
+                return -1;
+            }
+        }
+        
+        for (int i = 0; i < n; i++) {
+            x[i] = S();
+        }
+        
+        for (int i = 0; i < r; i++) {
+            int maj = -1;
+            for (int j = 0; j < m; j++) {
+                if (A[i][j] != S()) {
+                    maj = j;
+                    break;
+                }
+            }
+            if (maj != -1) {
+                x[maj] = b[i];
+            }
+        }
+        if (r < n) {
+            return n - r;
+        } else {
+            return 0;
+        }
+    }
+};
+```
+
+### 高斯消元(实数)
+```cpp
+// for real
+template <typename S, int N>
+struct GaussJordan {
+    Matrix<S, N> A;
+    ColVector<S, N> x;
+    ColVector<S, N> b;
+    
+    int solve(int n, int m) {
+        int r = 0;
+        for (int c = 0; r < n && c < m; c++) {
+            int pivot = r;
+            for (int i = r + 1; i < n; i++) {
+                if (fabs(A[i][c]) > fabs(A[pivot][c])) {
+                    pivot = i;
+                }
+            }
+            if (fabs(A[pivot][c] < EPS)) {
+                continue;
+            }
+            
+            if (pivot != r) {
+                swap(A.a[pivot], A.a[r]);
+                swap(b.a[pivot], b.a[r]);
+            }
+            S inv = S(1) / A[r][c];
+            for (int j = c; j < m; j++) {
+                A[r][j] = A[r][j] * inv;
+            }
+            b[r] = b[r] * inv;
+            
+            for (int i = 0; i < n; i++) {
+                if (i != r && A[i][c] != S()) {
+                    S factor = A[i][c];
+                    for (int j = c; j < m; j++) {
+                        A[i][j] = A[i][j] - factor * A[r][j];
+                    }
+                    b[i] = b[i] - factor * b[r];
+                }
+            }
+            r++;
+        }
+        
+        for (int i = r; i < n; i++) {
+            if (fabs(b[i]) > EPS) {
+                return -1;
+            }
+        }
+        
+        for (int i = 0; i < n; i++) {
+            x[i] = S();
+        }
+        
+        for (int i = 0; i < r; i++) {
+            int maj = -1;
+            for (int j = 0; j < m; j++) {
+                if (fabs(A[i][j]) > EPS) {
+                    maj = j;
+                    break;
+                }
+            }
+            if (maj != -1) {
+                x[maj] = b[i];
+            }
+        }
+        if (r < n) {
+            return n - r;
+        } else {
+            return 0;
+        }
+    }
+};
+```
+
+### 高斯消元(异或)
+```cpp
+template <int DIM>
+struct GaussXor {
+    array<bitset<DIM>, DIM> mat; // 存增广矩阵, 行从 0 到 n - 1, 列从 0 到 m
+
+    array<int, DIM> ans;
+    // 解异或线性方程组, 无解返回-1, 唯一解返回0, 无穷解返回自由变元数
+    int solve(int n, int m) {
+        // n 个方程, m 个未知量(即系数矩阵为 n 行 m 列)
+        int r = 0, c = 0;
+        for (; r < n && c < m; c++) {
+            int pivot = r;
+            while (pivot < n && !mat[pivot][c]) {
+                pivot++;
+            }
+            if (pivot == n) {
+                continue;
+            }
+            if (pivot != r) {
+                swap(mat[pivot], mat[r]);
+            }
+            for (int i = 0; i < n; i++) {
+                if (i != r && mat[i][c]) {
+                    mat[i] ^= mat[r];
+                }
+            }
+            r++;
+        }
+
+        for (int i = r; i < n; i++) {
+            if (mat[i][m]) {
+                return -1;
+            }
+        }
+        if (r < m) {
+            return m - r;
+        }
+        for (int i = 0; i < m; i++) {
+            if (i < n) {
+                ans[i] = mat[i][m];
+            }
+        }
+        return 0;
+    }
+};
+```
+
+### 异或线性基
+```cpp
+template <int DIM = 64>
+struct LinearBasis {
+    array<ull, DIM> p = {};
+    int cnt = 0;
+    bool zero = 0;
+    
+    bool insert(ull x) {
+        for (int i = DIM - 1; i >= 0; i--) {
+            if ((x & (1ULL << i)) == 0) {
+                continue;
+            }
+            if (!p[i]) {
+                p[i] = x;
+                cnt++;
+                return true;
+            }
+            x ^= p[i];
+        }
+        zero = true;
+        return false;
+    }
+    
+    bool check(ull x) {
+        for (int i = DIM - 1; i >= 0; i--) {
+            if ((x & (1ULL << i)) == 0) {
+                continue;
+            }
+            if (!p[i]) {
+                return false;
+            }
+            x ^= p[i];
+        }
+        return true;
+    }
+    
+    ull max() {
+        ull ret = 0;
+        for (int i = DIM - 1; i >= 0; i--) {
+            if ((ret ^ p[i]) > ret) {
+                ret ^= p[i];
+            }
+        }
+        return ret;
+    }
+    
+    ull min() {
+        if (zero) {
+            return 0;
+        }
+        for (int i = 0; i < DIM; i++) {
+            if (p[i]) {
+                return p[i];
+            }
+        }
+    }
+    
+    // 合并
+    friend bool operator+(const LinearBasis& a, const LinearBasis& b) {
+        LinearBasis ret = a;
+        for (int i = 0; i < DIM; i++) {
+            if (b.p[i]) {
+                ret.insert(b.p[i]);
+            }
+        }
+        return ret;
+    }
+};
+
+```
