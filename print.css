@@ -1,0 +1,67 @@
+
+
+@page {
+    size: A4;
+    margin: 8mm 6mm;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: "Microsoft YaHei", "Times New Roman", sans-serif;
+    font-size: 9.5pt;
+    line-height: 1.25;
+}
+
+h1 {
+    font-size: 17pt;
+    border-bottom: 1px solid #999;
+    margin-top: 18px;
+    margin-bottom: 10px;
+}
+
+h2 {
+    font-size: 13pt;
+    margin-top: 14px;
+    margin-bottom: 6px;
+}
+
+h3 {
+    font-size: 11pt;
+    margin-top: 10px;
+    margin-bottom: 4px;
+}
+
+pre {
+    font-family: Consolas, "Cascadia Code", "JetBrains Mono", monospace;
+    font-size: 8pt;
+    line-height: 1.12;
+
+    padding: 5px 7px;
+    border: 1px solid #bbb;
+    border-radius: 3px;
+
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+
+    break-inside: auto;
+    page-break-inside: auto;
+
+    overflow: visible;
+}
+
+code {
+    font-family: Consolas, "Cascadia Code", "JetBrains Mono", monospace;
+}
+
+table {
+    border-collapse: collapse;
+}
+
+img {
+    max-width: 100%;
+}
