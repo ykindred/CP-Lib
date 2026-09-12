@@ -1,0 +1,46 @@
+% ============================================================
+%  CP-Lib —— 算法竞赛模板库（打印版）
+%
+%  编译：  latexmk print/main.tex          （仓库根目录，.latexmkrc 已固化参数）
+%     或：  cd print && latexmk main.tex
+%
+%  引擎必须是 XeLaTeX（文档含中文）。改用 pdflatex 会直接失败。
+%
+%  内容在各 chapters/*.tex 里，直接手改即可；那些 .tex 是打印版的正本。
+% ============================================================
+\documentclass[10pt,a4paper]{ctexart}
+
+\input{preamble.tex}
+
+\begin{document}
+
+% ---------------- 首页标题 ----------------
+\thispagestyle{empty}
+\begin{center}
+  \vspace*{2mm}
+  {\Huge\bfseries CP-Lib}\\[3mm]
+  {\large 算法竞赛模板库}\\[2mm]
+  {\small 封装式模板 · 快速复用}
+\end{center}
+\vspace{3mm}
+
+% ---------------- 目录 ----------------
+\begin{multicols}{2}
+\tableofcontents
+\end{multicols}
+
+\clearpage
+
+% ---------------- 正文（双栏通排）----------------
+\begin{multicols}{2}
+
+\input{chapters/01-graph.tex}
+\input{chapters/02-datastructure.tex}
+\input{chapters/03-string.tex}
+\input{chapters/04-math.tex}
+\input{chapters/05-geometry.tex}
+\input{chapters/06-misc.tex}
+
+\end{multicols}
+
+\end{document}

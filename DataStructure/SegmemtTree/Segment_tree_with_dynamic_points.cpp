@@ -37,7 +37,7 @@ struct segment_tree_with_dynamic_points{
             data[p] = lt + rt;
             
             return;
-        }
+        // }
     }
     D query(int nl,int nr ,int tl ,int tr ,int p) const{
         if(nl>=tl&&nr<=tr) return data[p];

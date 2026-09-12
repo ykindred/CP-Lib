@@ -1,0 +1,22 @@
+# Python 缓存（tools/ 下的脚本 import 彼此会产生）
+__pycache__/
+*.pyc
+
+# LaTeX 编译产物（print/ 下的中间文件与最终 PDF）
+*.aux
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.xdv
+*.bbl
+*.blg
+*.run.xml
+
+# PDF 产物要不要入库由你自己定；
+# 默认忽略，想提交就删掉下面这行。
+print/CP-Lib.pdf

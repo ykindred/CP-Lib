@@ -1,0 +1,139 @@
+% ============================================================
+%  CP-Lib 打印版 —— 导言区
+%  引擎：XeLaTeX（中文必需）。用 latexmk -xelatex 编译。
+% ============================================================
+
+% ---------- 页面：A4 纵向，双栏，窄边距 ----------
+% top 必须容纳 headheight + headsep，否则页眉会被裁掉
+\usepackage[a4paper,top=13mm,bottom=12mm,left=9mm,right=9mm,headheight=13pt,headsep=3.5mm]{geometry}
+\usepackage{multicol}
+
+% ---------- 字体 ----------
+% ctexart 已自动加载 xeCJK 并选用 Windows 字体（SimSun/SimHei/KaiTi）。
+% 代码块里的中文注释走 \CJKttfamily，这里显式指定为宋体，小字号下最清晰。
+\setCJKmonofont{SimSun}
+% 拉丁等宽字体用于代码；Consolas 是 Windows 自带、比赛环境常见
+\setmonofont{Consolas}[Scale=0.92]
+
+% ---------- 数学 ----------
+\usepackage{amsmath}
+\usepackage{amssymb}
+% CP-Lib.md 第 3565 行用了 $180\degree$，而 \degree 并非 base LaTeX/amsmath 提供，
+% 不定义会直接编译失败。这里补上。
+\newcommand{\degree}{\ensuremath{^{\circ}}}
+
+% ---------- 标题层级压缩（双栏下必须，否则标题吃掉大量版面）----------
+\usepackage{titlesec}
+\usepackage{titletoc}
+
+% h1 -> \section
+\titleformat{\section}
+  {\normalfont\large\bfseries\color{seccolor}}
+  {\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{7pt}{3pt}
+
+% h2 -> \subsection
+\titleformat{\subsection}
+  {\normalfont\normalsize\bfseries\color{subseccolor}}
+  {\thesubsection}{0.5em}{}
+\titlespacing*{\subsection}{0pt}{5pt}{2pt}
+
+% h3 -> \subsubsection
+\titleformat{\subsubsection}
+  {\normalfont\small\bfseries}
+  {\thesubsubsection}{0.5em}{}
+\titlespacing*{\subsubsection}{0pt}{4pt}{1.5pt}
+
+% h4 -> \paragraph（不编号，紧凑）
+\titleformat{\paragraph}[runin]
+  {\normalfont\small\bfseries}
+  {}{0em}{}
+\titlespacing*{\paragraph}{0pt}{3pt}{0.5em}
+
+% 目录：收 h1/h2/h3
+\setcounter{tocdepth}{3}
+\setcounter{secnumdepth}{3}
+\contentsmargin{1.6em}
+\titlecontents{section}[0em]{\vspace{1pt}\bfseries}{\thecontentslabel\quad}{}{\titlerule*[0.4pc]{.}\contentspage}
+\titlecontents{subsection}[1.2em]{\vspace{0.5pt}}{\thecontentslabel\quad}{}{\titlerule*[0.4pc]{.}\contentspage}
+\titlecontents{subsubsection}[2.9em]{\small}{\thecontentslabel\quad}{}{\titlerule*[0.4pc]{.}\contentspage}
+
+% ---------- 颜色 ----------
+\usepackage{xcolor}
+\definecolor{seccolor}{RGB}{0,0,0}
+\definecolor{subseccolor}{RGB}{20,20,20}
+\definecolor{codekw}{RGB}{0,0,190}
+\definecolor{codecmt}{RGB}{0,120,0}
+\definecolor{codestr}{RGB}{170,20,20}
+\definecolor{codenum}{RGB}{140,0,140}
+\definecolor{coderule}{RGB}{190,190,190}
+\definecolor{linkcolor}{RGB}{0,0,200}
+
+% ---------- 代码高亮 ----------
+\usepackage{listings}
+\lstset{
+  language=C++,
+  basicstyle=\ttfamily\scriptsize,
+  keywordstyle=\color{codekw}\bfseries,
+  commentstyle=\color{codecmt}\itshape,
+  stringstyle=\color{codestr},
+  numberstyle=\tiny\color{gray},
+  % 折行：代码行宽 p99 约 85 列，单栏约容纳 69 列，超长行必须折
+  breaklines=true,
+  breakatwhitespace=false,
+  breakindent=1em,
+  % 注意：prebreak/postbreak 位于 \discretionary 内，其中不能出现 whatsit
+  % （\color 会产生 whatsit），否则报 "Improper discretionary list"。故用 \raisebox。
+  prebreak=\raisebox{0ex}[0ex][0ex]{\ensuremath{\searrow}},
+  postbreak=\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookrightarrow\space}},
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  tabsize=4,
+  extendedchars=true,
+  frame=l,
+  framerule=0.4pt,
+  rulecolor=\color{coderule},
+  xleftmargin=1.4mm,
+  xrightmargin=0.4mm,
+  framexleftmargin=0.4mm,
+  aboveskip=4pt,
+  belowskip=3pt,
+  % 超长代码块允许跨栏/跨页断开
+  breakautoindent=true,
+}
+
+% ---------- 页眉页脚（页码）----------
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.3pt}
+\renewcommand{\footrulewidth}{0pt}
+\renewcommand{\sectionmark}[1]{\markboth{#1}{}}
+\fancyhead[L]{\small\nouppercase{\leftmark}}
+\fancyhead[R]{\small\itshape CP-Lib}
+\fancyfoot[C]{\small\thepage\ /\ \pageref{LastPage}}
+
+% ---------- 图片、链接 ----------
+\usepackage{graphicx}
+\usepackage[hidelinks]{hyperref}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=linkcolor,
+  urlcolor=linkcolor,
+  bookmarksnumbered=true,
+  pdftitle={CP-Lib 算法竞赛模板},
+  pdfsubject={算法竞赛模板库},
+}
+
+% ---------- 列表 ----------
+\usepackage{enumitem}
+\setlist[itemize]{topsep=2pt,itemsep=1pt,parsep=0pt,leftmargin=1.2em}
+\setlist[enumerate]{topsep=2pt,itemsep=1pt,parsep=0pt,leftmargin=1.6em}
+
+% ---------- 正文排版 ----------
+\usepackage{indentfirst}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{2pt}
+\linespread{1.04}

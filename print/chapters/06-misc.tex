@@ -1,0 +1,148 @@
+\section{杂项}
+
+\subsection{离散化}
+
+\begin{lstlisting}
+// 离散化
+// 许多题目在处理数据的时候，并不关心值本身，只关心值之间的大小关系
+// 这个时候进行离散化是比较正确的决定
+template <typename T> 
+vector<T> Discretization(vector<T> o_array)
+{
+    vector<T> knum = o_array;
+    sort(knum.begin(), knum.end());
+    knum.erase(unique(knum.begin(), knum.end()),knum.end());
+    for(int i = 0;i<o_array.size();i++){
+        o_array[i] = lower_bound(knum.begin(),knum.end(),o_array[i]) - knum.begin();
+    }
+    return o_array;
+}
+//传入一个数组，传出离散化之后的数组 如 num = Normalization(num);
+\end{lstlisting}
+
+\subsection{欧拉序（子树转区间）}
+
+\begin{lstlisting}
+//许多处理树上问题，特别是对 子树 进行操作的时候 ，往往利用欧拉序将树拍平后，再利用线段树维护
+//实现了一个结构体，初始化n为节点数，并传入边（需人为确保是一棵树）
+//调用成员函数.init后，会生成两个个长度为n的数组
+//第一个为树的dfn序，注意默认视1为根节点
+//第二个为子树索引，tp[p] 代表 p节点所在子树在dfn上对应的连续区间 ，请使用auto[lp,rp] = pt[p] 调用
+struct GenerateEulerTourOrder
+{
+    vector<int>dfn;
+    vector<pair<int,int>>tp;
+    vector<vector<int>> g;
+    GenerateEulerTourOrder(int n){
+        dfn.reserve(n);
+        tp.resize(n+1);
+        g.resize(n+1);
+    }
+    void add(int u,int v){
+        g[u].push_back(v);
+        g[v].push_back(u);
+    }
+    void init(int head = 1){
+        auto dfs = [this](auto&&self,int n,int p) ->void {
+            auto & [lp,rp] = tp[n];
+            dfn.emplace_back(n);
+            lp = dfn.size()-1;
+            for(auto nextp:g[n]){
+                if(nextp== p) continue;
+                else{
+                    self(self,nextp,n);
+                }
+            }
+            rp = dfn.size() - 1;
+        };
+        dfs(dfs,head,-1);
+        return;
+    }
+};
+\end{lstlisting}
+
+\subsection{反转整数}
+
+\begin{lstlisting}
+// ---------- 8 位 ----------
+static inline uint8_t reverse8(uint8_t x) {
+    x = (uint8_t)(((x & 0x55U) << 1) | ((x & 0xAAU) >> 1));
+    x = (uint8_t)(((x & 0x33U) << 2) | ((x & 0xCCU) >> 2));
+    x = (uint8_t)(((x & 0x0FU) << 4) | ((x & 0xF0U) >> 4));
+    return x;
+}
+
+// ---------- 16 位 ----------
+static inline uint16_t reverse16(uint16_t x) {
+    x = (uint16_t)(((x & 0x5555U) << 1) | ((x & 0xAAAAU) >> 1));
+    x = (uint16_t)(((x & 0x3333U) << 2) | ((x & 0xCCCCU) >> 2));
+    x = (uint16_t)(((x & 0x0F0FU) << 4) | ((x & 0xF0F0U) >> 4));
+    x = (uint16_t)(((x & 0x00FFU) << 8) | ((x & 0xFF00U) >> 8));
+    return x;
+}
+
+// ---------- 32 位 ----------
+static inline uint32_t reverse32(uint32_t x) {
+//            0123456789012345678901234567890123456789
+    x = ((x & 0x55555555U) << 1) | ((x & 0xAAAAAAAAU) >> 1);
+    x = ((x & 0x33333333U) << 2) | ((x & 0xCCCCCCCCU) >> 2);
+    x = ((x & 0x0F0F0F0FU) << 4) | ((x & 0xF0F0F0F0U) >> 4);
+    x = ((x & 0x00FF00FFU) << 8) | ((x & 0xFF00FF00U) >> 8);
+    x = ((x & 0x0000FFFFU) << 16) | ((x & 0xFFFF0000U) >> 16);
+    return x;
+}
+
+// ---------- 64 位 ----------
+static inline uint64_t reverse64(uint64_t x) {
+    //        012345678901234567890123456789012345678901234567890123456789
+    x = ((x & 0x5555555555555555ULL) << 1) | ((x & 0xAAAAAAAAAAAAAAAAULL) >> 1);
+    x = ((x & 0x3333333333333333ULL) << 2) | ((x & 0xCCCCCCCCCCCCCCCCULL) >> 2);
+    x = ((x & 0x0F0F0F0F0F0F0F0FULL) << 4) | ((x & 0xF0F0F0F0F0F0F0F0ULL) >> 4);
+    x = ((x & 0x00FF00FF00FF00FFULL) << 8) | ((x & 0xFF00FF00FF00FF00ULL) >> 8);
+    x = ((x & 0x0000FFFF0000FFFFULL) << 16) | ((x & 0xFFFF0000FFFF0000ULL) >> 16);
+    x = ((x & 0x00000000FFFFFFFFULL) << 32) | ((x & 0xFFFFFFFF00000000ULL) >> 32);
+    return x;
+}
+
+// ---------- 128 位 ----------
+static inline unsigned __int128 reverse128(unsigned __int128 x) {
+    uint64_t lo = (uint64_t)x;                 // 低 64 位
+    uint64_t hi = (uint64_t)(x >> 64);         // 高 64 位
+    // 翻转整个 128 位：低块翻转后移到高位，高块翻转后移到低位
+    return ((unsigned __int128)reverse64(lo) << 64) | reverse64(hi);
+}
+//有符号数，直接借用无符号数
+static inline int8_t  reverse_int8 (int8_t  x) { return (int8_t) reverse8 ((uint8_t) x);  }
+static inline int16_t reverse_int16(int16_t x) { return (int16_t)reverse16((uint16_t)x); }
+static inline int32_t reverse_int32(int32_t x) { return (int32_t)reverse32((uint32_t)x); }
+static inline int64_t reverse_int64(int64_t x) { return (int64_t)reverse64((uint64_t)x); }
+static inline __int128 reverse_int128(__int128 x) {
+    return (__int128)reverse128((unsigned __int128)x);
+}
+\end{lstlisting}
+
+\subsection{防卡哈希表}
+
+\begin{lstlisting}
+#include <bits/stdc++.h>
+using namespace std;
+using ull = unsigned long long;
+#include <ext/pb_ds/assoc_container.hpp>
+#include <ext/pb_ds/tree_policy.hpp>
+struct chash {
+    static ull splitmix64(ull x) {
+        x += 0x9e3779b97f4a7c15;
+        x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9;
+        x = (x ^ (x >> 27)) * 0x94d049bb133111eb;
+        return x ^ (x >> 31);
+    }
+
+    size_t operator()(ull x) const {
+        static const ull F = 
+            chrono::steady_clock::now().time_since_epoch().count();
+        return splitmix64(x + F);
+    }
+};
+template<typename K, typename V>
+using HashMap = __gnu_pbds::gp_hash_table<K, V, chash>;
+\end{lstlisting}
