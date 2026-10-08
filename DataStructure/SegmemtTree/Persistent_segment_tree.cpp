@@ -22,6 +22,7 @@ struct persistent_segment_tree{
     //每次修改都创建新节点，不修改的部分复用原来的节点，因此递归新旧同时进行
     void modify(int nl,int nr ,int tp ,D val,int p ,int old_p){
         if(nl==nr){
+            // data[p] = data[old_p] + val
             data[p] = val;
             return;
         }else{

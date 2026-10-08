@@ -18,12 +18,12 @@ struct SpTable {
         }
         for (int j = 1; j < log; j++) {
             for (int i = 0; i + (1 << j) <= n; i++) {
-                st[j][i] = op(st[j - 1][i], st[j - 1][i + (1 << (j - 1))]);
+                st[j][i] = st[j-1][i] + st[j-1][i+(1<<(j - 1))];
             }
         }
     }
     S query(int l, int r) {
         int j = 31 - __builtin_clz(r - l);
-        return op(st[j][l], st[j][r - (1 << j)]);
+        return st[j][l] +st[j][r - (1<<j)];
     }
 };

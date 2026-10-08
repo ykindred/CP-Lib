@@ -5,6 +5,8 @@
 // T 请用 ll 或 Real（函数内部用到了 sgn）
 
 // CG.md: mincowski（原文档拼写），返回逆时针的闵可夫斯基和凸包
+// 与原文档一致：结果的首尾两个点是同一个点（起点被重复算了一次），
+// 直接拿去算面积/判凸没问题，若要求顶点互不相同自行 pop_back()
 template <class T>
 inline vector<Pnt<T>> minkowskiSum(const vector<Pnt<T>>& P1, const vector<Pnt<T>>& P2) {
     int n = (int)P1.size(), m = (int)P2.size();

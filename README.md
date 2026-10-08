@@ -100,6 +100,18 @@ CP-Lib/
 - **三维**：`Geometry_3D_base.cpp`（点线面封装与判定）、
   `Geometry_3D_intersect.cpp`（相交与交点）、
   `Geometry_3D_distance.cpp`（距离、夹角、体积）
+- **结论**：`Conclusion.md`（平面 / 立体几何结论与公式，纯文字）
+
+### `base.hpp` 的两个坑
+
+1. **依赖 C++20**：第 7 行 `constexpr Real PI = numbers::pi;` 用了 `std::numbers`，
+   `-std=c++17` 会编译失败。要么用 C++20，要么把这行改成 `acosl(-1.0L)`。
+2. **没有 include guard**：同一编译单元里重复包含会因 `PI` 重定义报错。
+   所以各几何文件都只包含一份上游（如三维三个文件只 include `Geometry_3D_base.cpp`）。
+
+另：`CG.md` 是旧的几何文档，其代码有 13 处缺陷（如点切线用错 `asin`、
+`circleIntersection` 校验用错变量、半平面交断言会误触发、动态凸包 `isIntersect`
+语义与函数名相反等），新文件里已逐条修掉并在注释中标明原委。**以源码为准。**
 
 ## 使用方式
 

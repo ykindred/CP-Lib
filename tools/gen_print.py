@@ -159,7 +159,8 @@ CONCLUSION_SOURCES = {
     "数据结构": "DataStructure/DataStructure.md",
     "字符串": "String/String.md",
     "数学": "Math/Math.md",
-    "计算几何": "ComputationalGeometry/CG.md",
+    # 几何的结论已单独整理到 Conclusion.md（CG.md 是旧稿）
+    "计算几何": "ComputationalGeometry/Conclusion.md",
 }
 CONCLUSION_PAT = re.compile(r"(结论|技巧|注意|速查|归档|性质)")
 
@@ -212,45 +213,80 @@ def emit_conclusions(title, md_rel):
         return []
     out = ["", "\\subsection*{结论与技巧}", "\\addcontentsline{toc}{subsection}{结论与技巧}"]
     for body in secs:
-        text = "\n".join(body).strip()
-        # 源文档里子标题和正文之间常常没有空行，先补一个空行，
-        # 否则标题会和正文粘成一段、一起被塞进 \textbf{}
-        text = re.sub(r"^(#### .*)$", r"\1\n", text, flags=re.M)
-        text = re.sub(r"\n{3,}", "\n\n", text)
-        paragraphs = [p for p in text.split("\n\n") if p.strip()]
-        for p in paragraphs:
-            p = p.strip()
-            if not p:
-                continue
-            # 子标题（降级保留的 ####）-> 加粗小标题
-            if p.startswith("#### "):
-                out.append("\\par\\addvspace{2pt}\\noindent\\textbf{%s}\\par"
-                           % render_prose(p[5:].strip()))
-                continue
-            # 列表行。注意要把「续行」并进上一项——缩进的图片、换行
-            # 说明都在续行里，早先直接丢弃会导致「如下图」却没有图。
-            if re.match(r"^\s*([-*]|\d+\.)\s+", p):
-                items, cur_item = [], None
-                for line in p.splitlines():
-                    mm = re.match(r"^\s*([-*]|\d+\.)\s+(.*)$", line)
-                    if mm:
-                        if cur_item is not None:
-                            items.append(cur_item)
-                        cur_item = mm.group(2)
-                    elif cur_item is not None and line.strip():
-                        cur_item += " " + line.strip()
-                if cur_item is not None:
-                    items.append(cur_item)
-                if items:
-                    ordered = bool(re.match(r"^\s*\d+\.\s+", p))
-                    env = "enumerate" if ordered else "itemize"
-                    out.append("\\begin{%s}" % env)
-                    for it in items:
-                        out.append("  \\item " + render_prose(it))
-                    out.append("\\end{%s}" % env)
+        out += _emit_conclusion_body(body)
+    return out
+
+
+_ITEM_RE = re.compile(r"^(\s*)([-*]|\d+\.)\s+(.*)$")
+
+
+def _emit_conclusion_body(body):
+    """逐行扫描正文。
+
+    不能按「空行分段」再判断是不是列表：几何结论里图片是列表项的续行，
+    而图片行后面紧跟着下一个列表项、中间没有空行，于是「图片 + 后面所有
+    条目」会被当成一个段落，既进不了 itemize，条目之间还会被压成一行。
+    所以这里按行走，遇到列表标记就开一个列表，缩进行的续行并进当前项。
+    """
+    lines = [l.rstrip() for l in body]
+    out, i, n = [], 0, len(lines)
+
+    while i < n:
+        line = lines[i]
+        if not line.strip():
+            i += 1
+            continue
+
+        if line.startswith("#### "):
+            out.append("\\par\\addvspace{2pt}\\noindent\\textbf{%s}\\par"
+                       % render_prose(line[5:].strip()))
+            i += 1
+            continue
+
+        m = _ITEM_RE.match(line)
+        if m:
+            ordered = m.group(2)[0].isdigit()
+            items, cur = [], None
+            while i < n:
+                mm = _ITEM_RE.match(lines[i])
+                if mm:
+                    if cur is not None:
+                        items.append(cur)
+                    cur = mm.group(3)
+                    i += 1
                     continue
-            out.append(render_prose(p.replace("\n", " ")))
-            out.append("")
+                if not lines[i].strip():
+                    j = i + 1
+                    while j < n and not lines[j].strip():
+                        j += 1
+                    if j < n and (_ITEM_RE.match(lines[j]) or lines[j][:1] in " \t"):
+                        i = j
+                        continue
+                    break
+                # 缩进或图片行 -> 当前项的续行
+                if lines[i][:1] in " \t" or lines[i].lstrip().startswith(("<img", "![")):
+                    if cur is not None:
+                        cur += " " + lines[i].strip()
+                    i += 1
+                    continue
+                break
+            if cur is not None:
+                items.append(cur)
+            env = "enumerate" if ordered else "itemize"
+            out.append("\\begin{%s}" % env)
+            for it in items:
+                out.append("  \\item " + render_prose(it))
+            out.append("\\end{%s}" % env)
+            continue
+
+        para = []
+        while i < n and lines[i].strip() and not _ITEM_RE.match(lines[i]) \
+                and not lines[i].startswith("#### "):
+            para.append(lines[i].strip())
+            i += 1
+        out.append(render_prose(" ".join(para)))
+        out.append("")
+
     return out
 
 

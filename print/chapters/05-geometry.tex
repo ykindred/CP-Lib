@@ -540,8 +540,8 @@ inline ll readReal(int k = 4) {
         num = (int)s.size() - it - 1; // 计算小数位数
         s.erase(s.begin() + it);      // 删除小数点
     }
-    if (num > k) {                    // 小数位过多时截断（原文档未处理这种情况）
-        s.erase(s.begin() + (int)s.size() - (num - k));
+    if (num > k) {                       // 小数位过多时截断（原文档未处理这种情况）
+        s.erase(s.size() - (num - k));   // 删掉末尾多余的 num - k 位
         num = k;
     }
     for (int i = 1; i <= k - num; i++) { // 补全小数位数
@@ -1391,6 +1391,8 @@ inline ll closestPairDis2(vector<Pnt<ll>> in) {
 // T 请用 ll 或 Real（函数内部用到了 sgn）
 
 // CG.md: mincowski（原文档拼写），返回逆时针的闵可夫斯基和凸包
+// 与原文档一致：结果的首尾两个点是同一个点（起点被重复算了一次），
+// 直接拿去算面积/判凸没问题，若要求顶点互不相同自行 pop_back()
 template <class T>
 inline vector<Pnt<T>> minkowskiSum(const vector<Pnt<T>>& P1, const vector<Pnt<T>>& P2) {
     int n = (int)P1.size(), m = (int)P2.size();
@@ -1439,9 +1441,22 @@ inline vector<Pr> halfPlaneIntersect(vector<Lr> lines) {
         }
         return crs(l1.v, l2.v) > 0;
     });
+    // 预处理：方向相同的平行直线只保留更紧的那条
+    //（原文档是在主循环里遇到同向平行线时改写 ls[0] 并 assert(ls.size() == 1)，
+    // 但只要队列里还留着更早的直线（很常见）这个断言就会失败，这里提前归并掉）
+    vector<Lr> uniq;
+    for (const Lr& l : lines) {
+        if (!uniq.empty() && sgn(crs(l.v, uniq.back().v)) == 0 && dot(l.v, uniq.back().v) > 0) {
+            if (!leftOf(uniq.back().p, l)) { // 新直线更紧
+                uniq.back() = l;
+            }
+            continue;
+        }
+        uniq.push_back(l);
+    }
     deque<Lr> ls;
     deque<Pr> ps;
-    for (const Lr& l : lines) {
+    for (const Lr& l : uniq) {
         if (ls.empty()) {
             ls.push_back(l);
             continue;
@@ -1473,6 +1488,11 @@ inline vector<Pr> halfPlaneIntersect(vector<Lr> lines) {
         ls.pop_back();
     }
     if (ls.size() <= 2) { // 交不出有面积的区域
+        return {};
+    }
+    // 首尾两条直线反向平行时交集无界（或为空），按本函数的约定返回空
+    //（原文档没有这个判断，此时求交会除以 0，base.hpp 的 intersection 会断言失败）
+    if (sgn(crs(ls[0].v, ls.back().v)) == 0) {
         return {};
     }
     ps.push_back(intersection(ls[0], ls.back()));
@@ -1846,6 +1866,8 @@ inline Real tetrahedronVolume(const P3& a, const P3& b, const P3& c, const P3& d
 
 \subsection*{结论与技巧}
 \addcontentsline{toc}{subsection}{结论与技巧}
+来源：\texttt{CG.md} 的「常用结论」一节（平面几何结论归档 / 立体几何结论归档）。 这些是文字性结论与公式，不是代码，故单独记在这里，不写成 \texttt{.cpp}。
+
 \par\addvspace{2pt}\noindent\textbf{平面几何结论归档}\par
 \begin{itemize}
   \item \texttt{hypot} 函数可以直接计算直角三角形的斜边长；

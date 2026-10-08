@@ -26,8 +26,8 @@ inline ll readReal(int k = 4) {
         num = (int)s.size() - it - 1; // 计算小数位数
         s.erase(s.begin() + it);      // 删除小数点
     }
-    if (num > k) {                    // 小数位过多时截断（原文档未处理这种情况）
-        s.erase(s.begin() + (int)s.size() - (num - k));
+    if (num > k) {                       // 小数位过多时截断（原文档未处理这种情况）
+        s.erase(s.size() - (num - k));   // 删掉末尾多余的 num - k 位
         num = k;
     }
     for (int i = 1; i <= k - num; i++) { // 补全小数位数

@@ -8,8 +8,8 @@ auto dfs1 = [&](auto&&self ,int u,int par ,int dep) -> void {
     for(auto &nxt:g[u]){
         if(nxt==par) continue;
         self(self,nxt,u,dep+1);
-        if(s[nxt]>s[g[u][0]]||g[u][0] == par) swap(nxt , g[u][0]);
         s[u]+=s[nxt];
+        if(s[nxt]>s[g[u][0]]||g[u][0] == par) swap(nxt , g[u][0]);
     }
 } ;
 vector<int>dsu , plz(n+1);
@@ -45,4 +45,3 @@ if(d[u]>d[v]) swap(u,v);
 /*
 query(u,v);
 */
-
