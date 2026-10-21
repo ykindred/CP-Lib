@@ -227,54 +227,36 @@ struct bset {
 \subsection{树状数组}
 
 \begin{lstlisting}
+//自定义结构体应当同时重载 + 和 -
+//请注意树状数组应当是1-based的，n个元素应该初始化为n+1
 template <typename T>
-class FenWick
+struct FenWick
 {
-private:
+#define lowbit(x)  (x) & ((-x))
     vector<T> BIT;
-    T lowbit(T x);
     int n;
-
-public:
-    FenWick(T n) : n(n)
-    {
+    FenWick(T n) : n(n){
         this->BIT.resize(n, 0);
     }
-    FenWick(vector<T> &ori) : FenWick(ori.size())
-    {
+    FenWick(vector<T> &ori) : FenWick(ori.size()){
         this->BIT = ori;
     }
-    void set(int poi, T value);
-    T query(int poi);
-    T query(int l, int r);
-};
-template <typename T>
-T FenWick<T>::lowbit(T x)
-{
-    return x & (-x);
-}
-template <typename T>
-void FenWick<T>::set(int poi, T value)
-{
-    for (; poi < n; poi += (lowbit(poi)))
+    void set(int poi, T value){
+        for (; poi < n; poi += (lowbit(poi)))
         (this->BIT[poi]) += value;
-    return;
-}
-template <typename T>
-T FenWick<T>::query(int poi)
-{
-    T ans = 0;
-    for (; poi > 0; poi -= lowbit(poi))
-    {
-        ans += (this->BIT)[poi];
-    }
-    return ans;
-}
-template <typename T>
-T FenWick<T>::query(int l, int r)
-{
-    return (this->query(r) - this->query(l - 1));
-}
+        return;
+    };
+    T query(int poi){
+        T ans = 0;
+        for (; poi > 0; poi -= lowbit(poi)){
+            ans += (this->BIT)[poi];
+        }   
+        return ans;
+    };
+    T query(int l, int r){
+        return (this->query(r) - this->query(l - 1));
+    };
+};
 \end{lstlisting}
 
 \subsection{基础并查集}
@@ -443,97 +425,56 @@ struct segment_tree{
 \subsection{懒标记线段树}
 
 \begin{lstlisting}
-//懒标记线段树的实现较为简单，但本身由于TAG的存在，非常灵活
-//特别是涉及多种操作的时候，要仔细想清楚TAG的与DATA的合并逻辑与优先级
-//基础逻辑就一句话，在递归之前，必须下传TAG，在结束之后，必须根据子区间信息push up
-
-//这里给出一个区间赋值/加和/查询 操作的线段树实现，实际实现时对照修改即可
-#include<bits/stdc++.h>
-using namespace std;
-using ll = long long;
-struct D{
-    ll val = 0;
-};
-D operator+(const D&l_op,const D& r_op){return {l_op.val+r_op.val};};
-struct TAG{
-    ll add = 0;
-    ll set = -1;
-};
-
-TAG operator+(const TAG&l_op,const TAG&r_op){ //r_op是优先级更高的tag
-    if(r_op.set!=-1){
-        return {r_op.add,r_op.set};
+//这是一个示例实现，这是一个区间加法线段树
+struct segment_tree_with_lazytag{
+    #define lp 2*p
+    #define rp 2*p+1
+    vector<int> data;
+    vector<int> lz_tag;
+    segment_tree_with_lazytag(int n){
+        data.resize(4*n+10);
+        lz_tag.resize(4*n+10);
     }
-    else{
-        return {l_op.add+ r_op.add,l_op.set};
+    void apply(int nl ,int nr ,int p ,int val) {
+        data[p] += (nr - nl + 1) * val;
+        lz_tag[p] += val;
     }
-}
-TAG& operator+=(TAG& l_op,const TAG& r_op){
-    l_op = l_op + r_op;
-    return l_op;
-}
-struct Segment_tree_with_lazy_tag{
-    vector<D> data;
-    vector<TAG> lz_tag;
-    D e; //单位元
-    Segment_tree_with_lazy_tag(int n){
-        data.resize(4*n);
-        lz_tag.resize(4*n);
-    }
-    //计算区间信息与tag合并的函数
-    D merge(const D& data,const TAG& tag,ll length){ 
-        const auto[add,set] = tag;
-        if(set!=-1){
-            return {(set+add)*length};
-        }
-        else{
-            return {data.val + add*length};
+    void push_down(int nl ,int nr ,int p){
+        if(nl == nr) lz_tag[p] = 0;
+        else {
+            int mid = (nl+nr)>>1;
+            apply(nl ,mid , lp);
+            apply(mid+1 , nr , rp);
+            lz_tag[p] = 0;
         }
     }
-    //区间编辑
-    void modify(int nl,int nr,int tl,int tr,TAG val,int p){
-        if(nl>=tl&&nr<=tr){
-            lz_tag[p] += val;
+    void add(int nl , int nr ,int tl ,int tr ,int p ,int val) {
+        if(tl<=nl&&tr>=nr){
+            apply(nl,nr,p,val);
             return;
         }
-        else{
-            //递归前push down
-            lz_tag[2*p] += lz_tag[p];
-            lz_tag[2*p+1] += lz_tag[p];
-            lz_tag[p] = TAG();
-
-            int mid = nl +((nr-nl)>>1);
-            if(tl<=mid) modify (nl,mid,tl,tr,val,2*p);
-            if(tr>mid) modify (mid+1,nr,tl,tr,val,2*p+1);
-
-            //push up
-            data[p] = merge(data[2*p],lz_tag[2*p],(mid - nl+1)) + merge(data[2*p+1],lz_tag[2*p+1],(nr-mid));
-            return ;
+        else {
+            push_down(nl,nr,p);
+            int mid = (nl + nr) >> 1;
+            if(tl<=mid) add(nl,mid,tl,tr,lp,val);
+            if(tr>mid) add(mid+1,nr,tl,tr,rp,val);
+            data[p] = data[lp] + data[rp];
         }
     }
-    //区间查询
-    D query(int nl,int nr ,int tl,int tr,int p){
-        if(nl>=tl&&nr<=tr){
-            return merge(data[p],lz_tag[p],nr-nl+1);
-        }
-        else{
-            //递归前push down
-            lz_tag[2*p] += lz_tag[p];
-            lz_tag[2*p+1] += lz_tag[p];
-            lz_tag[p] = TAG();
-
-            D lt = e;
-            D rt = e;
-            int mid = nl +((nr-nl)>>1);
-            if(tl<=mid) lt = query(nl,mid,tl,tr,2*p);
-            if(tr>mid) rt = query(mid+1,nr,tl,tr,2*p+1);
-
-            //push up
-            data[p] = merge(data[2*p],lz_tag[2*p],(mid - nl+1)) + merge(data[2*p+1],lz_tag[2*p+1],(nr-mid));
-            return lt+rt;
+    int query(int nl ,int nr ,int tl , int tr ,int p) {
+        if(tl<=nl && tr>=nr) return data[p];
+        else {
+            push_down(nl,nr,p);
+            int mid = (nl+nr)>>1 , lt = 0 , rt = 0;
+            if(tl<=mid) lt = query(nl,mid,tl,tr,lp);
+            if(tr>mid) rt = query(mid+1,nr,tl,tr,rp);
+            data[p] = data[lp] + data[rp];
+            return lt + rt;
         }
     }
-};
+    #undef lp
+    #undef rp
+}
 \end{lstlisting}
 
 \subsection{动态开点线段树}
@@ -621,6 +562,7 @@ struct persistent_segment_tree{
     //每次修改都创建新节点，不修改的部分复用原来的节点，因此递归新旧同时进行
     void modify(int nl,int nr ,int tp ,D val,int p ,int old_p){
         if(nl==nr){
+            // data[p] = data[old_p] + val
             data[p] = val;
             return;
         }else{
@@ -1108,96 +1050,373 @@ struct Trie_01{
 };
 \end{lstlisting}
 
-\subsection{Treap}
+\subsection{Splay（模板版）}
 
 \begin{lstlisting}
-//pbds自带平衡树，用这个非常方便，一下给出示例（Generated by Gemini 3.1 pro)
-#include <iostream>
-// 1. 引入 pb_ds 的核心头文件
-#include <ext/pb_ds/assoc_container.hpp>
-#include <ext/pb_ds/tree_policy.hpp>
+template<typename T>
+struct splaytree {
+    // 成员变量
+    struct NODE {
+        int s[2];   // s[0] 是左儿子，s[1] 是右儿子
+        int siz;    // 子树大小
+        T key;      // 节点存储的值
+        int fa;     // 父亲节点索引
 
-using namespace std;
-using namespace __gnu_pbds; // 必须引入此命名空间
+        NODE(T val = T()) : siz(1), key(val), fa(0) {
+            s[0] = s[1] = 0;
+        }
+    };
 
-// ==========================================
-// 1. 普通平衡树（Set：元素不可重复）模板
-// ==========================================
-typedef tree<
-    int,                                  // Key 类型
-    null_type,                            // Value 类型（null_type 表示作为 set 使用）
-    less<int>,                            // 比较函数（less 为升序，greater 为降序）
-    rb_tree_tag,                          // 底层结构（红黑树）
-    tree_order_statistics_node_update     // 开启名次树功能（必须带上这个）
-> ordered_set;
+    std::vector<NODE> D;
+    int root = 0; // 根节点的索引
 
-// ==========================================
-// 2. 多重集平衡树（Multiset：元素可重复）模板
-// 竞赛避坑：直接用 less_equal 会导致 erase 行为异常
-// 解决方案：通过插入 pair<值, 唯一ID> 强行变回单集
-// ==========================================
-typedef pair<int, int> pii;
-typedef tree<
-    pii, 
-    null_type, 
-    less<pii>, 
-    rb_tree_tag, 
-    tree_order_statistics_node_update
-> ordered_multiset;
+    // 辅助函数（替代宏定义）
+    inline int& ls(int x) { return D[x].s[0]; }
+    inline int ls(int x) const { return D[x].s[0]; }
+    inline int& rs(int x) { return D[x].s[1]; }
+    inline int rs(int x) const { return D[x].s[1]; }
+    inline int& fa(int x) { return D[x].fa; }
+    inline int fa(int x) const { return D[x].fa; }
 
-int main() {
-    // --------------------------------------
-    // 基础单集演示
-    // --------------------------------------
-    ordered_set tr;
-    
-    // 插入元素 (O(log N))
-    tr.insert(10);
-    tr.insert(30);
-    tr.insert(20);
-    tr.insert(50);
-    tr.insert(40);
-
-    // 【核心操作 1】order_of_key(x) -> 查询排名
-    // 作用：返回严格小于 x 的元素个数（排名从 0 开始）
-    int rank = tr.order_of_key(30); 
-    cout << "严格小于 30 的元素个数: " << rank << "\n"; // 输出 2
-
-    // 【核心操作 2】find_by_order(k) -> 按排名查询
-    // 作用：返回第 k 小元素的迭代器（k 从 0 开始计算）
-    auto it = tr.find_by_order(2); 
-    cout << "第 2 小（0-indexed）的元素: " << *it << "\n\n"; // 输出 30
-
-    // --------------------------------------
-    // 多重集演示 (竞赛实战推荐)
-    // --------------------------------------
-    ordered_multiset mtr;
-    int id_counter = 0; // 全局或局部的唯一时间戳/ID分配器
-
-    // 插入多个相同元素
-    mtr.insert({15, ++id_counter});
-    mtr.insert({15, ++id_counter});
-    mtr.insert({15, ++id_counter});
-    mtr.insert({5, ++id_counter});
-
-    // 1. 查询排名：直接查 {x, 0}
-    // 因为 second=0 比所有真实插入的同值元素（ID>=1）都小
-    cout << "严格小于 15 的元素个数: " << mtr.order_of_key({15, 0}) << "\n"; // 输出 1 (只有 5)
-
-    // 2. 按排名查询：k_th_val = find_by_order(k)->first
-    cout << "第 1 小的元素的值: " << mtr.find_by_order(1)->first << "\n"; // 输出 15
-
-    // 3. 安全删除操作：需要先用 lower_bound 找到具体的 pair，然后再 erase
-    auto del_it = mtr.lower_bound({15, 0});
-    if (del_it != mtr.end() && del_it->first == 15) {
-        mtr.erase(del_it); // 只删除了其中一个 15
+    // 构造函数
+    splaytree() : root(0) {
+        D.resize(1); // 0号位置作为空节点占位
     }
 
-    // 验证删除后 15 还剩下几个 (原本3个，删了1个，应该剩2个，加上前置的5，总size为3)
-    cout << "删除一个 15 后，树的大小: " << mtr.size() << "\n"; // 输出 3
+    int newp(const T& key = T()) {
+        D.push_back(NODE(key));
+        return D.size() - 1;
+    }
 
-    return 0;
-}
+    void maintain(int p) {
+        if (p) {
+            D[p].siz = D[ls(p)].siz + D[rs(p)].siz + 1;
+        }
+    }
+
+    void clear(int x) {
+        ls(x) = rs(x) = fa(x) = D[x].siz = 0;
+        D[x].key = T();
+    }
+
+    bool get(int x) const {
+        return x == rs(fa(x));
+    }
+
+    // 旋转 p 节点
+    void rotate(int p) {
+        int f = fa(p), ff = fa(f);
+        if (!p || !f) return;
+        int dir = get(p);
+        D[f].s[dir] = D[p].s[dir ^ 1];
+        if (D[f].s[dir]) fa(D[f].s[dir]) = f;
+        D[p].s[dir ^ 1] = f;
+        if (ff) D[ff].s[get(f)] = p;
+        fa(f) = p;
+        fa(p) = ff;
+        maintain(f);
+        maintain(p);
+    }
+
+    // 伸展操作
+    void splay(int p) {
+        for (int f = fa(p); (f = fa(p)); rotate(p)) {
+            if (fa(f)) {
+                rotate(get(p) == get(f) ? f : p);
+            }
+        }
+        this->root = p;
+    }
+
+    // 插入元素
+    void insert(const T& val) {
+        if (!root) {
+            root = newp(val);
+            return;
+        }
+        int cur = root, f = fa(cur);
+        while (cur) {
+            f = cur;
+            cur = D[cur].s[val > D[cur].key];
+        }
+        cur = newp(val);
+        fa(cur) = f;
+        D[f].s[val > D[f].key] = cur;
+        splay(cur);
+    }
+
+    // 删除元素
+    void del(const T& val) {
+        if (!root) return;
+        int cur = root, p = 0;
+        while (cur && D[cur].key != val) {
+            p = cur;
+            cur = D[cur].s[val > D[cur].key];
+        }
+        if (!cur) {
+            if (p) splay(p);
+            return;
+        }
+        splay(cur);
+        if (!ls(cur) && !rs(cur)) {
+            clear(cur);
+            root = 0;
+            return;
+        }
+        if (!ls(cur)) {
+            root = rs(cur);
+            fa(root) = 0;
+            clear(cur);
+            return;
+        }
+        if (!rs(cur)) {
+            root = ls(cur);
+            fa(root) = 0;
+            clear(cur);
+            return;
+        }
+        int L = ls(cur), R = rs(cur);
+        root = L;
+        fa(L) = 0;
+        int mx = L;
+        while (rs(mx)) mx = rs(mx);
+        splay(mx);
+        rs(mx) = R;
+        fa(R) = mx;
+        clear(cur);
+        maintain(mx);
+    }
+
+    // 查询 val 的排名（以 1 为起始）
+    int rank(const T& val) {
+        int cur = root, p = 0, ret = 1;
+        while (cur) {
+            p = cur;
+            if (D[cur].key < val) {
+                ret += D[ls(cur)].siz + 1;
+                cur = rs(cur);
+            } else {
+                cur = ls(cur);
+            }
+        }
+        if (p) splay(p);
+        return ret;
+    }
+
+    // 查询第 rk 名的值
+    T kth(int rk) {
+        if (!root) return T();
+        int cur = root;
+        while (cur) {
+            int sz = D[ls(cur)].siz + 1;
+            if (sz > rk) {
+                cur = ls(cur);
+            } else if (sz == rk) {
+                break;
+            } else {
+                rk -= sz;
+                cur = rs(cur);
+            }
+        }
+        if (cur) splay(cur);
+        return D[cur].key;
+    }
+
+    // 查询严格小于 val 的最大值（前驱）
+    T pre(const T& val) {
+        if (!root) return T();
+        int cur = root, p = 0;
+        T ret = T();
+        while (cur) {
+            p = cur;
+            if (D[cur].key >= val) {
+                cur = ls(cur);
+            } else {
+                ret = D[cur].key;
+                cur = rs(cur);
+            }
+        }
+        if (p) splay(p);
+        return ret;
+    }
+
+    // 查询严格大于 val 的最小值（后继）
+    T nxt(const T& val) {
+        if (!root) return T();
+        int cur = root, p = 0;
+        T ret = T();
+        while (cur) {
+            p = cur;
+            if (D[cur].key <= val) {
+                cur = rs(cur);
+            } else {
+                ret = D[cur].key;
+                cur = ls(cur);
+            }
+        }
+        if (p) splay(p);
+        return ret;
+    }
+};
+\end{lstlisting}
+
+\subsection{Splay（数组版）}
+
+\begin{lstlisting}
+struct splaytree {
+#define ls(x) D[(x)].s[0]
+#define rs(x) D[(x)].s[1]
+#define fa(x) D[(x)].fa
+    //成员变量
+    struct NODE {
+        int s[2], siz, key, fa;
+        NODE() { s[0] = s[1] = siz = key = fa = 0; }
+    };
+    vector<NODE> D;
+    int root = 0;
+
+    splaytree() :root(0) {
+        D.resize(1);
+    }
+    
+    int newp(int key = 0) { D.push_back(NODE()); D.back().key = key; D.back().siz = 1; return D.size() - 1; }
+    void maintain(int p) { D[p].siz = D[ls(p)].siz + D[rs(p)].siz + 1; }
+    void clear(int x) { ls(x) = rs(x) = fa(x) = D[x].siz = D[x].key = 0; }
+    bool get(int x) { return x == rs(fa(x)); }
+    ////旋转p节点，其实无需区分左旋和右旋，总是将相反方向的节点接到父亲，然后父亲接到相反方向节点
+    void rotate(int p) {
+        int f = fa(p), ff = fa(f);
+        if ((!p) || (!f)) return;
+        int dir = get(p);
+        
+        D[f].s[dir] = D[p].s[dir ^ 1];
+        if (D[f].s[dir]) fa(D[f].s[dir]) = f; 
+        
+        D[p].s[dir ^ 1] = f;
+        if (ff) D[ff].s[get(f)] = p;
+        fa(f) = p; 
+        fa(p) = ff;
+        
+        maintain(f); 
+        maintain(p); 
+    }
+    //*伸展，将p节点旋转为根
+    //这样写需要确保rotate是安全的，即rotate不旋转空节点和根节点
+    //每次splay至多向上翻转两步，无论如何最后一步总是rotate p，如果f和同时为左/右孩子，则先翻转p
+    void splay(int p) {
+        for (int f = fa(p); f = fa(p); rotate(p)) {
+            if (fa(f)) {
+                rotate(get(p) == get(f) ? f : p);
+            }
+        }
+        this->root = p;
+    }
+    //插入，注意这里支持多元素，约定左子树<= ，右子树>
+    void insert(int val) {
+        if (!root) { root = newp(val); return; }
+        int cur = root, f = 0;
+        while (cur) {
+            f = cur;
+            cur = D[cur].s[val > D[cur].key];
+        }
+        cur = newp(val);
+        fa(cur) = f;
+        D[f].s[val > D[f].key] = cur;
+        splay(cur);
+    }
+
+    void del(int val) {
+        if (!root) return;
+        int cur = root, p = 0;
+        while (cur && D[cur].key != val) {
+            p = cur; 
+            cur = D[cur].s[val > D[cur].key];
+        }
+        if (!cur) { splay(p); return; }
+        splay(cur);
+        
+        if (!ls(cur) && !rs(cur)) {
+            clear(cur); root = 0; return;
+        }
+        if (!ls(cur)) {
+            root = rs(cur); fa(root) = 0; clear(cur); return;
+        }
+        if (!rs(cur)) {
+            root = ls(cur); fa(root) = 0; clear(cur); return;
+        }
+        
+        int L = ls(cur), R = rs(cur);
+        root = L; fa(L) = 0;
+        int mx = L;
+        while (rs(mx)) mx = rs(mx);
+        splay(mx);
+        
+        rs(mx) = R; fa(R) = mx;
+        clear(cur);
+        maintain(mx);
+    }
+    //查询x的排名 ,从小到大，最小的排名为1
+    int rank(int val) {
+        int cur = root, p = 0, ret = 1;
+        while (cur) {
+            p = cur;
+            if (D[cur].key < val) {
+                ret += D[ls(cur)].siz + 1;
+                cur = rs(cur);
+            } else {
+                cur = ls(cur);
+            }
+        }
+        if (p) splay(p);
+        return ret;
+    }
+    //查询第K名的值，**必须**确保查询合法
+    int kth(int rk) {
+        if (!root) return -1;
+        int cur = root;
+        while (cur) {
+            int sz = D[ls(cur)].siz + 1;
+            if (sz > rk) cur = ls(cur);
+            else if (sz == rk) break;
+            else {
+                rk -= sz; 
+                cur = rs(cur);
+            }
+        }
+        splay(cur);
+        return D[cur].key;
+    }
+    //考虑从根往下走，如果当前点大于等于 x，那前驱一定在左子树，我们往左走；
+    //否则，前驱可能在这个点，也可能在这个点的右子树里，
+    //总之不在左子树里。所以先用这个点更新答案，再进入它的右子树继续找。
+    int pre(int val) {
+        if (!root) return -1;
+        int cur = root, ret = 0, p = 0;
+        while (cur) {
+            p = cur;
+            if (D[cur].key >= val) cur = ls(cur);
+            else { ret = D[cur].key; cur = rs(cur); }
+        }
+        if (p) splay(p);
+        return ret;
+    }
+    //与上一条类似
+    int nxt(int val) {
+        if (!root) return -1;
+        int cur = root, ret = 0, p = 0;
+        while (cur) {
+            p = cur;
+            if (D[cur].key <= val) cur = rs(cur);
+            else { ret = D[cur].key; cur = ls(cur); }
+        }
+        if (p) splay(p);
+        return ret;
+    }
+
+#undef ls
+#undef rs
+#undef fa
+};
 \end{lstlisting}
 
 \subsection{隐式 Treap（FHQ-Treap）}
@@ -1311,6 +1530,247 @@ struct Implicit_treap {
 };
 \end{lstlisting}
 
+\subsection{PBDS 平衡树（名次树）}
+
+\begin{lstlisting}
+//pbds自带平衡树，用这个非常方便，一下给出示例（Generated by Gemini 3.1 pro)
+#include <iostream>
+// 1. 引入 pb_ds 的核心头文件
+#include <ext/pb_ds/assoc_container.hpp>
+#include <ext/pb_ds/tree_policy.hpp>
+
+using namespace std;
+using namespace __gnu_pbds; // 必须引入此命名空间
+
+// ==========================================
+// 1. 普通平衡树（Set：元素不可重复）模板
+// ==========================================
+typedef tree<
+    int,                                  // Key 类型
+    null_type,                            // Value 类型（null_type 表示作为 set 使用）
+    less<int>,                            // 比较函数（less 为升序，greater 为降序）
+    rb_tree_tag,                          // 底层结构（红黑树）
+    tree_order_statistics_node_update     // 开启名次树功能（必须带上这个）
+> ordered_set;
+
+// ==========================================
+// 2. 多重集平衡树（Multiset：元素可重复）模板
+// 竞赛避坑：直接用 less_equal 会导致 erase 行为异常
+// 解决方案：通过插入 pair<值, 唯一ID> 强行变回单集
+// ==========================================
+typedef pair<int, int> pii;
+typedef tree<
+    pii, 
+    null_type, 
+    less<pii>, 
+    rb_tree_tag, 
+    tree_order_statistics_node_update
+> ordered_multiset;
+
+int main() {
+    // --------------------------------------
+    // 基础单集演示
+    // --------------------------------------
+    ordered_set tr;
+    
+    // 插入元素 (O(log N))
+    tr.insert(10);
+    tr.insert(30);
+    tr.insert(20);
+    tr.insert(50);
+    tr.insert(40);
+
+    // 【核心操作 1】order_of_key(x) -> 查询排名
+    // 作用：返回严格小于 x 的元素个数（排名从 0 开始）
+    int rank = tr.order_of_key(30); 
+    cout << "严格小于 30 的元素个数: " << rank << "\n"; // 输出 2
+
+    // 【核心操作 2】find_by_order(k) -> 按排名查询
+    // 作用：返回第 k 小元素的迭代器（k 从 0 开始计算）
+    auto it = tr.find_by_order(2); 
+    cout << "第 2 小（0-indexed）的元素: " << *it << "\n\n"; // 输出 30
+
+    // --------------------------------------
+    // 多重集演示 (竞赛实战推荐)
+    // --------------------------------------
+    ordered_multiset mtr;
+    int id_counter = 0; // 全局或局部的唯一时间戳/ID分配器
+
+    // 插入多个相同元素
+    mtr.insert({15, ++id_counter});
+    mtr.insert({15, ++id_counter});
+    mtr.insert({15, ++id_counter});
+    mtr.insert({5, ++id_counter});
+
+    // 1. 查询排名：直接查 {x, 0}
+    // 因为 second=0 比所有真实插入的同值元素（ID>=1）都小
+    cout << "严格小于 15 的元素个数: " << mtr.order_of_key({15, 0}) << "\n"; // 输出 1 (只有 5)
+
+    // 2. 按排名查询：k_th_val = find_by_order(k)->first
+    cout << "第 1 小的元素的值: " << mtr.find_by_order(1)->first << "\n"; // 输出 15
+
+    // 3. 安全删除操作：需要先用 lower_bound 找到具体的 pair，然后再 erase
+    auto del_it = mtr.lower_bound({15, 0});
+    if (del_it != mtr.end() && del_it->first == 15) {
+        mtr.erase(del_it); // 只删除了其中一个 15
+    }
+
+    // 验证删除后 15 还剩下几个 (原本3个，删了1个，应该剩2个，加上前置的5，总size为3)
+    cout << "删除一个 15 后，树的大小: " << mtr.size() << "\n"; // 输出 3
+
+    return 0;
+}
+\end{lstlisting}
+
+\subsection{PBDS 堆}
+
+\begin{lstlisting}
+#include <iostream>
+#include <vector>
+#include <ext/pb_ds/priority_queue.hpp>
+
+using namespace std;
+
+// ===================== pb_ds 堆模板区 =====================
+
+// 1. 基础类型别名 (解决与 std::priority_queue 的命名冲突)
+// 大根堆 (默认)
+template<typename T>
+using pb_max_heap = __gnu_pbds::priority_queue<T, less<T>, __gnu_pbds::pairing_heap_tag>;
+
+// 小根堆
+template<typename T>
+using pb_min_heap = __gnu_pbds::priority_queue<T, greater<T>, __gnu_pbds::pairing_heap_tag>;
+
+// 2. 自定义结构体
+struct Node {
+    int id;       // 节点编号 (通常用于映射迭代器)
+    long long val; // 权值
+};
+
+// 3. 自定义比较器 (用于结构体)
+struct Cmp {
+    // 这里写 > 是小根堆，写 < 是大根堆
+    bool operator()(const Node& a, const Node& b) const {
+        return a.val > b.val; 
+    }
+};
+
+// 带自定义比较器的配对堆别名
+using pb_node_heap = __gnu_pbds::priority_queue<Node, Cmp, __gnu_pbds::pairing_heap_tag>;
+// 定义迭代器类型，方便后续写代码
+using point_it = pb_node_heap::point_iterator;
+
+// ==========================================================
+
+const int MAXN = 100005;
+
+// 用于记录每个 id 对应的堆中迭代器，初始全为 nullptr (即 nullptr 泛型的等价，pb_ds中为 0/NULL)
+point_it it_pos[MAXN]; 
+
+void solve() {
+    pb_node_heap h1, h2;
+
+    // ------------------------------------------------
+    // 场景 1: 插入并记录迭代器 (O(1))
+    // ------------------------------------------------
+    it_pos[1] = h1.push({1, 50});
+    it_pos[2] = h1.push({2, 30});
+    it_pos[3] = h1.push({3, 40});
+
+    // ------------------------------------------------
+    // 场景 2: 动态修改权值 (Decrease-Key / Modify, 均摊 O(log n))
+    // ------------------------------------------------
+    // 比如我们要把 id=1 的节点权值修改为 10
+    if (it_pos[1] != nullptr) {
+        h1.modify(it_pos[1], {1, 10}); 
+        // 此时 id=1 (val=10) 自动浮到小根堆顶
+    }
+
+    // ------------------------------------------------
+    // 场景 3: 任意节点删除 (均摊 O(log n))
+    // ------------------------------------------------
+    // 直接在堆中删掉 id=3 的节点
+    if (it_pos[3] != nullptr) {
+        h1.erase(it_pos[3]);
+        it_pos[3] = nullptr; // 记得清空，防止出现野指针
+    }
+
+    // ------------------------------------------------
+    // 场景 4: 堆的合并 (O(1))
+    // ------------------------------------------------
+    h2.push({4, 15});
+    h2.push({5, 5});
+
+    // 将 h2 的元素全部合并进 h1
+    // 注意：操作后 h1 包含所有元素，而 h2 变为空堆 (size = 0)
+    h1.join(h2);
+
+    // ------------------------------------------------
+    // 场景 5: 常规访问与弹出 (均摊 O(log n))
+    // ------------------------------------------------
+    cout << "当前堆内元素(按升序): \n";
+    while (!h1.empty()) {
+        Node u = h1.top();
+        h1.pop();
+        // 弹出后，该节点在堆中的迭代器就失效了，更新映射
+        it_pos[u.id] = nullptr; 
+        
+        cout << "ID: " << u.id << ", Val: " << u.val << "\n";
+    }
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    solve();
+    return 0;
+}
+\end{lstlisting}
+
+\subsection{rope（块状链表）}
+
+\begin{lstlisting}
+#include <iostream>
+#include <ext/rope> // 必须包含的头文件
+
+using namespace std;
+using namespace __gnu_cxx; // 必须声明的命名空间
+
+int main() {
+    // 1. 定义：可以存 int，也可以直接用 crope（即 rope<char>）处理字符串
+    rope<int> rp; 
+    crope str_rp = "HelloWorld";
+
+    // 2. 尾部添加元素
+    rp.push_back(10);
+    rp.push_back(20);
+    rp.push_back(30); // 当前序列: [10, 20, 30]
+
+    // 3. 在下标 k 处插入元素（0-indexed），复杂度 O(log n)
+    rp.insert(1, 99); // 在下标 1 处插入 99 -> [10, 99, 20, 30]
+
+    // 4. 删除：从下标 pos 开始删除 len 个元素，复杂度 O(log n)
+    rp.erase(2, 1);   // 从下标 2 开始删 1 个 -> [10, 99, 30]
+
+    // 5. 提取子区间：从 pos 开始长度为 len 的子序列，复杂度 O(log n)
+    rope<int> sub = rp.substr(1, 2); // 提取 [99, 30]
+
+    // 6. 区间剪切与粘贴（比如把区间 [l, r] 移到最前面）
+    // 相当于：截取子串 + 原处删除 + 头部拼接，全部 O(log n)
+    rp = rp.substr(1, 2) + rp.substr(0, 1); // 变成 [99, 30, 10]
+
+    // 7. 单点修改：注意 rp[k] 返回的是只读引用，修改最好用 replace
+    rp.replace(0, 888); // 将下标 0 的元素替换为 888 -> [888, 30, 10]
+
+    // 8. 遍历与访问
+    for (int i = 0; i < rp.size(); i++) {
+        cout << rp[i] << " "; // 单次访问 O(log n)
+    }
+    return 0;
+}
+\end{lstlisting}
+
 \subsection{树链剖分}
 
 \begin{lstlisting}
@@ -1324,8 +1784,8 @@ auto dfs1 = [&](auto&&self ,int u,int par ,int dep) -> void {
     for(auto &nxt:g[u]){
         if(nxt==par) continue;
         self(self,nxt,u,dep+1);
-        if(s[nxt]>s[g[u][0]]||g[u][0] == par) swap(nxt , g[u][0]);
         s[u]+=s[nxt];
+        if(s[nxt]>s[g[u][0]]||g[u][0] == par) swap(nxt , g[u][0]);
     }
 } ;
 vector<int>dsu , plz(n+1);
@@ -1363,6 +1823,48 @@ query(u,v);
 */
 \end{lstlisting}
 
+\subsection{点分治 / 点分树}
+
+\begin{lstlisting}
+//预先定义邻接表数组 vector<vector<int>>g ,所有节点默认1-based
+vector<bool> R(n+1) ;
+vector<int> siz(n+1);
+vector<vector<int>> Cg(n+1); //图的质心，子图的质心
+int h = - 1;
+
+auto get_siz = [&](auto&& self ,int u ,int p = -1)-> int {
+    siz[u] = 1;
+    for(auto nxt:g[u]){
+        if(nxt == p || R[nxt]) continue;
+        else siz[u] += self(self ,nxt ,u);
+    }
+    return siz[u];
+};
+
+auto get_ctd = [&](auto&& self ,int u ,int t , int p = -1) -> int {
+    //int mxsiz = 0;
+    for(auto nxt : g[u]) {
+        if(R[nxt] || nxt == p) continue;
+        if(siz[nxt] > t / 2)
+            return self(self ,nxt , t, u);
+    }
+    return u;
+};
+
+auto build = [&](auto&& self ,int u) -> int {
+    int h = get_ctd(get_ctd,u,get_siz(get_siz,u));
+    R[h] = true;
+    for(auto nxt : g[h]){
+        if(R[nxt]) continue;
+        else Cg[h].push_back(self(self ,nxt));
+    }
+    return h;
+};
+h = build(build ,1);
+
+//h为整个树重心，Cg是一个有根树的邻接表，代表树与子树重心之间的边
+\end{lstlisting}
+
 \subsection{稀疏表}
 
 \begin{lstlisting}
@@ -1386,13 +1888,13 @@ struct SpTable {
         }
         for (int j = 1; j < log; j++) {
             for (int i = 0; i + (1 << j) <= n; i++) {
-                st[j][i] = op(st[j - 1][i], st[j - 1][i + (1 << (j - 1))]);
+                st[j][i] = st[j-1][i] + st[j-1][i+(1<<(j - 1))];
             }
         }
     }
     S query(int l, int r) {
         int j = 31 - __builtin_clz(r - l);
-        return op(st[j][l], st[j][r - (1 << j)]);
+        return st[j][l] +st[j][r - (1<<j)];
     }
 };
 \end{lstlisting}
@@ -1406,4 +1908,221 @@ struct SpTable {
 //我们在查询的时候，先确保右指针单调挪动，每次右指针挪动前，把左指针回溯到最初始的状态（区块右边界）
 //再将指针左移以匹配区间
 //注意到这样就只有add操作，我们只需要维护一个操作栈即可正确回溯，注意到左指针最多挪动sqrt(n)次
+
+//给定一个长度为n的序列，与q个查询 ，求范围内相同元素的最大间距
+#include<bits/stdc++.h>
+using namespace std;
+int main(){
+    int n;
+    cin>>n;
+    int k;
+    cin>>k;
+    vector<int>a(n);
+    for(int i = 0 ; i< n;i++) cin>>a[i];
+    int q;
+    cin>>q;
+    vector<tuple<int,int,int>> query(q);
+    vector<int>ans(q);
+    for(int i = 0 ;i<q;i++){
+        auto&[l,r,pos] = query[i];
+        cin>>l>>r;
+        pos = i;
+        l -- ,r --;
+    }
+    int B = 0;
+    while(B*B < n) B++;
+    sort(query.begin() , query.end() , [&](auto a,auto b){
+        auto[l1,r1,p1] = a ; auto [l2,r2,p2] = b;
+        if(l1/B < l2/B) return true;
+        else if(l1/B == l2/B && r1<r2) return true;
+        return false;
+    });
+    int p1 = 0 ,p2 = 0;
+    vector<pair<int,int>>ap(k+1 , {-1,-1});
+    vector<int>ap2(k+1,-1);
+    while(p1<q){
+        while(p2<q && get<0>(query[p2]) / B == get<0>(query[p1]) / B) p2++;
+       // cerr<<p1<<" "<<p2<<endl;
+        int nB = get<0>(query[p1]) /B ;
+        //nB * B , (nB+1)*B - 1
+        int p = min((nB+1)*B - 1 ,n - 1) ;
+        int q = p;
+        ap[a[p]] = {p,p};
+        stack<tuple<int,int,int,int>> st;
+        int nowans = 0;
+        for(int i = p1 ; i<p2 ;i++){
+            auto &[l ,r,pos] = query[i]; 
+            //l r在同块中必须特判
+            if(l / B == r/B){
+                stack<int> st;
+                int nowans = 0;
+                for(int j = l ;j<= r; j++){
+                    if(ap2[a[j]] != -1){
+                        nowans = max(nowans , j - ap2[a[j]]);
+                    }
+                    else {
+                        st.push(a[j]);
+                        ap2[a[j]] = j;
+                    }
+                }
+                ans[pos] = nowans;
+                while(!st.empty()){
+                    auto t = st.top();
+                    st.pop();
+                    ap2[t] = -1;
+                }
+                continue;
+            }          
+            //右区间扩张
+            while(q<r){
+                q++;
+                if(ap[a[q]].first == -1){
+                    ap[a[q]].first = ap[a[q]].second = q; 
+                }
+                else {
+                    ap[a[q]].second = q;
+                    nowans = max(nowans , ap[a[q]].second - ap[a[q]].first);
+                }
+            }
+            ///左区间扩张
+            while(p>l){
+                p --;
+                if(ap[a[p]].first == -1){
+                    st.push({a[p] , -1 , -1 ,nowans});
+                    ap[a[p]].first =ap[a[p]].second = p;
+                }
+                else {
+                    st.push({a[p] , ap[a[p]].first ,ap[a[p]].second , nowans});
+                    ap[a[p]].first = p;
+                    nowans = max(nowans , ap[a[p]].second - ap[a[p]].first);
+                }
+            };
+            ans[pos] = nowans;
+            //撤销左区间修改
+            while(!st.empty()){
+                auto[t ,of , os, old_ans] = st.top();
+                st.pop();
+                ap[t] = {of ,os};
+                nowans = old_ans;
+            }
+            p = min((nB+1)*B - 1 ,n - 1);
+        }
+        for(auto&[x,y]:ap){x = y = -1;}
+        p1 = p2;
+    }
+    for(int i = 0 ;i<q;i++) cout<<ans[i]<<endl;
+}
+\end{lstlisting}
+
+\subsection{凸包上二分（动态维护直线最值）}
+
+\begin{lstlisting}
+using ll = long long;
+using i128 = __int128;
+
+struct p {
+    ll x = 0;
+    ll y = 0;
+};
+
+struct vec {
+    ll x = 0;
+    ll y = 0;
+    vec(const p& l, const p& r) : x(r.x - l.x), y(r.y - l.y) {}
+};
+
+struct convex {
+    int cur = 0;
+    int ptr = 0; 
+    vector<p> pt;
+    convex(int max_n = 200005) : cur(0), ptr(0), pt(max_n) {}
+    i128 cross(const vec& v1, const vec& v2) const {
+        return (i128)v1.x * v2.y - (i128)v1.y * v2.x;
+    }
+
+
+    ll eval(int i, ll x) const {
+        return pt[i].x * x + pt[i].y;
+    }
+
+    void insert(p v) {
+        if (cur > 0 && pt[cur - 1].x == v.x) {
+            if (v.y <= pt[cur - 1].y) return; 
+            cur--;                        
+        }
+        while (cur > 1 && cross(vec(pt[cur - 2], pt[cur - 1]), vec(pt[cur - 1], v)) >= 0) {
+            cur--;
+        }
+        pt[cur++] = v;
+    }
+
+    // 【写法一】通用二分查询：适用于查询 x 无单调性的情况，单次 O(log n)，常数极小
+    ll find(ll x) const {
+        int l = 0, r = cur - 2, ans = cur - 1;
+        while (l <= r) {
+            int mid = (l + r) >> 1;
+            // 因为函数值在凸壳上单峰，若 mid 的值 >= mid + 1 的值，说明峰值在 mid 或其左侧
+            if (eval(mid, x) >= eval(mid + 1, x)) {
+                ans = mid;
+                r = mid - 1;
+            } else {
+                l = mid + 1;
+            }
+        }
+        return eval(ans, x);
+    }
+
+    // 【写法二】单调指针查询：若查询的 x 也是单调递增的，用这个均摊 O(1)，比二分快数倍
+    ll find_mono(ll x) {
+        if (ptr >= cur) ptr = cur - 1;
+        while (ptr < cur - 1 && eval(ptr, x) <= eval(ptr + 1, x)) {
+            ptr++;
+        }
+        return eval(ptr, x);
+    }
+};
+\end{lstlisting}
+
+\subsection{LineContainer（动态直线容器）}
+
+\begin{lstlisting}
+using ll = long long;
+
+struct Line {
+    mutable ll k, b, p; // p 存储当前直线与下一条直线的交点横坐标（有效区间右端点）
+    bool operator<(const Line& o) const { return k < o.k; }
+    bool operator<(ll x) const { return p < x; } // 用于 lower_bound 按交点二分查询
+};
+
+// 动态维护 max(k * x + b)，若求 min 则插入 (-k, -b) 并将结果取反即可
+struct LineContainer : multiset<Line, less<>> {
+    static const ll inf = LLONG_MAX;
+
+    // 整数向下取整除法：用于精确计算两条直线的交点横坐标 floor(a / b)
+    ll div(ll a, ll b) {
+        return a / b - ((a ^ b) < 0 && a % b);
+    }
+
+    // 计算直线 x 与相邻下一条直线 y 的交点，并判断 y 是否已经被完全覆盖而失效
+    bool isect(iterator x, iterator y) {
+        if (y == end()) return x->p = inf, 0;
+        if (x->k == y->k) x->p = x->b > y->b ? inf : -inf;
+        else x->p = div(y->b - x->b, x->k - y->k);
+        return x->p >= y->p;
+    }
+
+    // 插入一条任意斜率的直线 y = kx + b，均摊 O(log N)
+    void add(ll k, ll b) {
+        auto z = insert({k, b, 0}), y = z++, x = y;
+        while (isect(y, z)) z = erase(z); // 向右淘汰冗余后继
+        if (x != begin() && isect(--x, y)) isect(x, y = erase(y)); // 检查当前插入点本身是否冗余
+        while ((y = x) != begin() && (--x)->p >= y->p) isect(x, erase(y)); // 向左淘汰冗余前驱
+    }
+
+    // 查询在给定 x 处的最大值 max(kx + b)，单次 O(log N)
+    ll query(ll x) {
+        auto l = *lower_bound(x); // 直接二分找到第一个有效右端点 >= x 的直线
+        return l.k * x + l.b;
+    }
+};
 \end{lstlisting}

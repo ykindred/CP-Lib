@@ -1,0 +1,117 @@
+% ============================================================
+%  《CP-Lib 修改指南》PDF 的导言区（由 tools/build_guide.py 注入）
+%  只负责样式；正文在 docs/editing-guide.md。
+% ============================================================
+
+% ---------- 字体 ----------
+\setCJKmainfont{SimSun}[AutoFakeBold=2]
+\setCJKsansfont{SimHei}[AutoFakeBold=2]
+\setCJKmonofont{SimHei}
+\setmonofont{Consolas}
+\setsansfont{TeX Gyre Heros}[Scale=MatchLowercase]
+
+% ---------- 颜色 ----------
+\definecolor{accent}{RGB}{28,62,106}
+\definecolor{accent2}{RGB}{146,74,36}
+\definecolor{ink}{RGB}{24,24,24}
+\definecolor{muted}{RGB}{108,114,124}
+\definecolor{hairline}{RGB}{212,220,231}
+\definecolor{codebg}{RGB}{247,248,251}
+\definecolor{codekw}{RGB}{18,72,138}
+\definecolor{codecmt}{RGB}{72,112,82}
+\definecolor{codestr}{RGB}{163,50,40}
+\definecolor{codedir}{RGB}{118,70,148}
+
+% ---------- 封面装饰 ----------
+\usepackage{tikz}
+
+% ---------- 标题 ----------
+\usepackage{titlesec}
+\usepackage{titletoc}
+\titleformat{\section}[block]
+  {\normalfont\sffamily\LARGE\bfseries}
+  {\color{accent}\thesection}{0.7em}{\color{ink}}
+  [\vspace{2pt}{\color{accent}\titlerule[1.1pt]}]
+\titlespacing*{\section}{0pt}{14pt plus 2pt minus 2pt}{7pt}
+\titleformat{\subsection}[block]
+  {\normalfont\sffamily\large\bfseries}
+  {\color{accent}\thesubsection}{0.55em}{\color{ink}}
+\titlespacing*{\subsection}{0pt}{10pt plus 1pt minus 1pt}{2.5pt}
+\titleformat{\subsubsection}
+  {\normalfont\sffamily\normalsize\bfseries\color{ink}}
+  {\color{accent}\thesubsubsection}{0.5em}{}
+\titlespacing*{\subsubsection}{0pt}{7pt}{2pt}
+
+% ---------- 页眉页脚 ----------
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+\renewcommand{\headrule}{{\color{hairline}\hrule width\headwidth height 0.4pt}}
+% 页眉用固定文字：指南很短，按 section 标记反而会出现「当前页显示下一节」的问题
+\fancyhead[L]{\sffamily\small\color{accent}CP-Lib 修改指南}
+\fancyhead[R]{\sffamily\small\color{muted}CP-Lib}
+\fancyfoot[C]{\sffamily\small\color{accent}\bfseries\thepage%
+  \color{muted}\normalfont\,/\,\pageref{LastPage}}
+
+% ---------- 目录样式 ----------
+% 目录单独占一页（默认 \tableofcontents 后面不换页）
+\let\cpliborigtableofcontents\tableofcontents
+\renewcommand{\tableofcontents}{\cpliborigtableofcontents\clearpage}
+\contentsmargin{1.7em}
+\titlecontents{section}[0em]
+  {\addvspace{3pt}\sffamily\bfseries\color{accent}}
+  {\thecontentslabel\hspace{0.55em}}{}
+  {\color{muted!70}\titlerule*[0.45pc]{.}\hspace{0.55em}\color{accent}\contentspage}
+\titlecontents{subsection}[1.5em]
+  {}
+  {\color{accent}\thecontentslabel\hspace{0.5em}}{}
+  {\color{muted!70}\titlerule*[0.45pc]{.}\hspace{0.55em}\color{muted}\contentspage}
+
+% ---------- 代码块 ----------
+\usepackage{listings}
+\lstset{
+  basicstyle=\ttfamily\fontsize{9}{11}\selectfont,
+  keywordstyle=\color{codekw}\bfseries,
+  commentstyle=\color{codecmt}\itshape,
+  stringstyle=\color{codestr},
+  backgroundcolor=\color{codebg},
+  frame=l,
+  framerule=1.4pt,
+  rulecolor=\color{accent!45},
+  framesep=1.8mm,
+  xleftmargin=0.6mm,
+  xrightmargin=0.6mm,
+  breaklines=true,
+  breakatwhitespace=false,
+  breakindent=1.2em,
+  breakautoindent=true,
+  prebreak=,
+  postbreak=\raisebox{0ex}[0ex][0ex]{\ensuremath{\color{muted}\hookrightarrow}}\space,
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  tabsize=4,
+  extendedchars=true,
+  aboveskip=8pt,
+  belowskip=8pt,
+}
+
+% ---------- 表格、列表、正文 ----------
+\usepackage{enumitem}
+\setlist[itemize]{topsep=3pt,itemsep=1.5pt,parsep=0pt,leftmargin=1.4em}
+\setlist[enumerate]{topsep=3pt,itemsep=1.5pt,parsep=0pt,leftmargin=1.8em}
+\renewcommand{\arraystretch}{1.25}
+
+\usepackage{indentfirst}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{3pt}
+\linespread{1.08}
+
+% hyperref 由 pandoc 模板加载；在所有设置完成后统一改链接颜色
+\AtBeginDocument{%
+  \hypersetup{colorlinks=true,linkcolor=accent,urlcolor=accent,
+              pdftitle={CP-Lib 修改指南},pdfsubject={模板库维护与打印版构建}}
+}

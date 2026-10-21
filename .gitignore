@@ -12,10 +12,17 @@ __pycache__/
 *.fls
 *.fdb_latexmk
 *.synctex.gz
+*.synctex(busy)
 *.xdv
 *.bbl
 *.blg
 *.run.xml
+*.nav
+*.snm
+*.vrb
+
+# 直接跑 `xelatex main.tex` 会留下另一份 PDF；正式产物是 CP-Lib.pdf
+print/main.pdf
 
 # PDF 产物要不要入库由你自己定；
 # 默认忽略，想提交就删掉下面这行。

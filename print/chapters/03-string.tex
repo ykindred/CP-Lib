@@ -612,12 +612,12 @@ vector<int> lyndon_factors(const string& s) {
   \item \textbf{拼接 + 分隔符}：求 t 在 s 中的匹配，对 \texttt{t + '\#' + s} 跑 KMP/Z；分隔符必须不出现在原串（多串拼接时用不同分隔符）
   \item \textbf{二分 + 哈希}：LCP、字典序比较、最长公共子串等 O(n log n) 判定类问题
   \item \textbf{正反哈希判回文}：\texttt{h.get(l, r) == rev.get(n-1-r, n-1-l)}
-  \item \textbf{周期}：最小周期 = \texttt{n - pi[n-1]}；有整周期 ⇔ \texttt{n \% (n - pi[n-1]) == 0}；最小周期长度 = 最小 border 长度
+  \item \textbf{周期}：最小周期 = \texttt{n - pi[n-1]}；有整周期 $\Leftrightarrow$ \texttt{n \% (n - pi[n-1]) == 0}；最小周期长度 = 最小 border 长度
   \item \textbf{周期引理（Fine–Wilf）}：若 p、q 都是 s 的周期且 \texttt{p + q ≤ n + gcd(p, q)}，则 \texttt{gcd(p, q)} 也是周期
   \item \textbf{border 论}：一个串的所有 border 长度可以分成 O(log n) 段等差数列
   \item \textbf{本质不同子串数}：SA：\texttt{n(n+1)/2 - Σlcp}；SAM：\texttt{Σ(len[v] - len[link[v]])}
   \item \textbf{字典序第 k 小}：SAM 上 DAG 计数贪心；SA 上直接取 sa[k-1]
-  \item \textbf{循环同构判定}：两串循环同构 ⇔ 最小表示相同；s+s 包含所有循环位移
+  \item \textbf{循环同构判定}：两串循环同构 $\Leftrightarrow$ 最小表示相同；s+s 包含所有循环位移
   \item \textbf{哈希防卡}：自然溢出（2\textasciicircum{}64）可被生日攻击构造冲突，重要场合用双哈希或随机 BASE；哈希值不要暴露给交互
   \item \textbf{01-Trie}：Trie 的 ALPHA 改为 2，可 O(bit) 求最大异或对、按位贪心
   \item \textbf{多串 LCP 问题}：后缀数组 + 二分 + 按 lcp 分组；或广义 SAM

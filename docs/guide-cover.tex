@@ -1,0 +1,39 @@
+% 封面：由 pandoc 的 --include-before-body 插入在 \begin{document} 之后
+\thispagestyle{empty}
+\pdfbookmark[0]{封面}{cover}
+
+\begin{tikzpicture}[remember picture,overlay]
+  \fill[accent] (current page.north west)
+    rectangle ([yshift=-4.5mm]current page.north east);
+  \fill[accent] (current page.south west)
+    rectangle ([yshift=1.2mm]current page.south east);
+  \draw[accent!30,line width=0.5pt]
+    ([xshift=17mm,yshift=24mm]current page.south west) --
+    ([xshift=17mm,yshift=-26mm]current page.north west);
+  \draw[accent!16,line width=0.5pt]
+    ([xshift=-30mm,yshift=42mm]current page.south east) circle (37mm);
+  \draw[accent!9,line width=0.5pt]
+    ([xshift=-30mm,yshift=42mm]current page.south east) circle (53mm);
+\end{tikzpicture}
+
+\vspace*{50mm}
+\noindent\hspace*{25mm}%
+\begin{minipage}{0.76\textwidth}
+  {\sffamily\bfseries\fontsize{48}{54}\selectfont\color{accent} CP-Lib 修改指南\par}
+  \vspace{7mm}
+  {\sffamily\fontsize{18}{23}\selectfont\color{ink} 模板代码 · 打印版排版 · 常见问题\par}
+  \vspace{7mm}
+  {\color{accent}\rule{44mm}{1.5pt}}\par
+  \vspace{4mm}
+  {\sffamily\large\color{muted} 改完源码，一条命令重新出 PDF\par}
+\end{minipage}
+
+\vfill
+\noindent\hspace*{25mm}%
+{\sffamily\small\color{muted} CP-Lib
+  \quad\textcolor{hairline}{|}\quad 配套打印版使用
+  \quad\textcolor{hairline}{|}\quad \today\par}
+\vspace*{13mm}
+
+\clearpage
+\markboth{目录}{}

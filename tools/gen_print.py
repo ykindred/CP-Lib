@@ -3,9 +3,9 @@
 """
 从仓库里的真实源码生成打印版章节 print/chapters/*.tex。
 
-⚠️ 这是生成器，不是一次性脚本。但注意：生成物会覆盖 print/chapters/ 下的同名文件，
-   如果你已经在 .tex 里手工改过东西，跑这个脚本会丢掉那些改动。
-   仓库当前的做法是「.tex 为打印版正本」，所以正常情况下不要再跑它。
+⚠️ 生成物会覆盖 print/chapters/ 下的同名文件。模板代码更新后运行本脚本；
+   如果手工改过 .tex，请先把改动回写到源码，否则会被覆盖。
+   日常更推荐直接运行 tools/build_print.py（生成 + 编译一步到位）。
 
 用法：
     python tools/gen_print.py            # 生成全部章节
@@ -13,12 +13,27 @@
 """
 
 import argparse
+import os
 import re
 import sys
 from pathlib import Path
 
+
+def setup_console():
+    """Windows 控制台可能是 GBK；统一成 UTF-8，避免中文输出乱码。"""
+    if sys.platform.startswith("win"):
+        os.system("chcp 65001 >nul")
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError, OSError):
+            pass
+
+
+# 不生成 tools/__pycache__：这个脚本经常被 build_print.py 调用
+sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from md2tex import render_prose  # 复用 md -> LaTeX 的行内转换
+from md_inline import render_prose  # 行内 Markdown -> LaTeX
 
 ROOT = Path(__file__).resolve().parent.parent
 OUTDIR = ROOT / "print" / "chapters"
@@ -63,15 +78,21 @@ CH_DS = ("数据结构", "DataStructure", [
     ("标记永久化线段树", "SegmemtTree/Segment_tree_with_persistent_marks.cpp"),
     ("李超线段树", "SegmemtTree/Lichao_segment_tree.cpp"),
     ("线段树套线段树", "SegmemtTree/Segment_tree_of_segment_tree.cpp"),
-    ("线段树合并", "SegmemtTree/Segment_tree_merge.cpp"),
     ("基础字典树", "Trie/Trie.cpp"),
     ("01 字典树", "Trie/01-Trie.cpp"),
     ("可持久化 01 字典树", "Trie/Persistent_Trie.cpp"),
-    ("Treap", "Treap/treap.cpp"),
-    ("隐式 Treap（FHQ-Treap）", "Treap/Implicit_treap.cpp"),
-    ("树链剖分", "Heavy-Light Decomposition/Heavy_light_decomposition.cpp"),
+    ("Splay（模板版）", "Treap/splay.cpp"),
+    ("Splay（数组版）", "Binary Seaech Tree/splay.cpp"),
+    ("隐式 Treap（FHQ-Treap）", "Binary Seaech Tree/Implicit_treap.cpp"),
+    ("PBDS 平衡树（名次树）", "Binary Seaech Tree/treap_pbds.cpp"),
+    ("PBDS 堆", "Heap/pbds_heap.cpp"),
+    ("rope（块状链表）", "Binary Seaech Tree/rope.cpp"),
+    ("树链剖分", "Tree Structure Decomposition/Heavy_light_decomposition.cpp"),
+    ("点分治 / 点分树", "Tree Structure Decomposition/Centroid_decomposition.cpp"),
     ("稀疏表", "Sptable/sptable.hpp"),
     ("莫队（含回滚莫队思路）", "Mo's algorithm/Mo_with_rollback.cpp"),
+    ("凸包上二分（动态维护直线最值）", "Other/Binary_Search_on_Convex.cpp"),
+    ("LineContainer（动态直线容器）", "Other/LineContainer.cpp"),
 ])
 
 CH_STRING = ("字符串", "String", [
@@ -149,6 +170,7 @@ CH_MISC = ("杂项", ".", [
     ("欧拉序（子树转区间）", "Miscellaneous/GenerateEulerTourOrder.cpp"),
     ("反转整数", "Miscellaneous/ReverseInt.cpp"),
     ("防卡哈希表", "Miscellaneous/hashtable.hpp"),
+    ("快读快写（FinFout）", "Miscellaneous/FinFout.cpp"),
 ])
 
 CHAPTERS = [CH_GRAPH, CH_DS, CH_STRING, CH_MATH, CH_CG, CH_MISC]
@@ -311,30 +333,45 @@ def emit_chapter(title, folder, entries):
     return out, missing, empty
 
 
+def listed_paths():
+    """章节配置里列到的源文件绝对路径。"""
+    listed = set()
+    for title, folder, entries in CHAPTERS:
+        for _, rel in entries:
+            listed.add(((ROOT / folder / rel) if folder != "." else (ROOT / rel)).resolve())
+    return listed
+
+
+def unlisted_sources():
+    """仓库里存在、但章节配置没有列到的源文件（打印版不会包含）。"""
+    listed = listed_paths()
+    out = []
+    for p in sorted(ROOT.rglob("*")):
+        if not p.is_file() or p.suffix not in {".cpp", ".hpp", ".h"}:
+            continue
+        rp = p.relative_to(ROOT).as_posix()
+        if rp.startswith(("print/", "tools/")):
+            continue
+        if p.resolve() not in listed:
+            n = len(p.read_text(encoding="utf-8", errors="replace").splitlines())
+            out.append((rp, n))
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true",
                     help="只列出未归入打印版的源文件，不写文件")
     args = ap.parse_args()
 
-    # 记录配置里列到的绝对路径，用于 --check
-    listed = set()
-    for title, folder, entries in CHAPTERS:
-        for _, rel in entries:
-            listed.add(((ROOT / folder / rel) if folder != "." else (ROOT / rel)).resolve())
-
     if args.check:
+        unlisted = unlisted_sources()
         print("=== 未归入打印版的源文件 ===")
-        for p in sorted(ROOT.rglob("*")):
-            if not p.is_file() or p.suffix not in {".cpp", ".hpp", ".h"}:
-                continue
-            rp = p.relative_to(ROOT).as_posix()
-            if rp.startswith(("print/", "tools/")):
-                continue
-            if p.resolve() not in listed:
-                n = len(p.read_text(encoding="utf-8", errors="replace").splitlines())
-                print(f"    {rp}   ({n} 行)")
-        return
+        if not unlisted:
+            print("    （无）")
+        for rp, n in unlisted:
+            print(f"    {rp}   ({n} 行)")
+        return 1 if unlisted else 0
 
     OUTDIR.mkdir(parents=True, exist_ok=True)
     total_missing, total_empty = [], []
@@ -346,7 +383,9 @@ def main():
             "数学": "04-math", "计算几何": "05-geometry", "杂项": "06-misc",
         }[title]
         text = "\n".join(body).rstrip() + "\n"
-        (OUTDIR / (slug + ".tex")).write_text(text, encoding="utf-8")
+        # 显式指定 \n：Path.write_text 在 Windows 上默认会翻译成 CRLF，
+        # 导致生成物和仓库里已有的 LF 版本整文件 diff。
+        (OUTDIR / (slug + ".tex")).write_text(text, encoding="utf-8", newline="\n")
         n = text.count("\n")
         print(f"{slug+'.tex':<26}{n:>6} 行   {title}")
         total_missing += [(title, m) for m in missing]
@@ -361,6 +400,18 @@ def main():
         for t, m in total_empty:
             print(f"    {t}: {m}")
 
+    # 新增源文件但忘了写进章节配置时，打印版会静默漏掉它；每次生成后都提醒一下。
+    unlisted = unlisted_sources()
+    if unlisted:
+        print("\n[提示] 以下源文件未归入打印版：")
+        for rp, n in unlisted:
+            print(f"    {rp}   ({n} 行)")
+        print("    要收进 PDF，请把它们加到本文件顶部的章节配置里。")
+
+    # 配置里写了但文件不存在，多半是改名/移动后忘了更新配置；让调用方中止。
+    return 1 if total_missing else 0
+
 
 if __name__ == "__main__":
-    main()
+    setup_console()
+    sys.exit(main())
