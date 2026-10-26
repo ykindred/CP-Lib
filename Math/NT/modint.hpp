@@ -1,18 +1,15 @@
 #pragma once
-#include <bits/stdc++.h>
-using namespace std;
-using u32 = unsigned int;
-using u64 = unsigned long long;
-using ll = long long;
-using i128 = __int128;
-constexpr int MOD = 998'244'353;
+#include "../head.hpp"
 
+// ok
 template <int P> 
 struct ModInt {
     u32 val;
     constexpr ModInt(ll x = 0) : val((x %= P) < 0 ? x + P : x) {}
     // 注意i128等类型需要先转成ll
     using M = ModInt;
+
+    // 希望编译期计算的话以下运算符全部补上constexpr
     M &operator+=(const M &p) {
         if ((val += p.val) >= P) {
             val -= P;
@@ -30,13 +27,13 @@ struct ModInt {
         return *this;
     }
     M &operator/=(const M &p) { return (*this) *= p.inv(); }
-    constexpr M operator-() const { return M(val ? P - val : u32(0)); }
-    constexpr M operator+(const M &p) const { return M(*this) += p; }
-    constexpr M operator-(const M &p) const { return M(*this) -= p; }
-    constexpr M operator*(const M &p) const { return M(*this) *= p; }
-    constexpr M operator/(const M &p) const { return M(*this) /= p; }
-    constexpr bool operator==(const M &p) const { return val == p.val; }
-    constexpr bool operator!=(const M &p) const { return val != p.val; }
+    M operator-() const { return M(val ? P - val : u32(0)); }
+    M operator+(const M &p) const { return M(*this) += p; }
+    M operator-(const M &p) const { return M(*this) -= p; }
+    M operator*(const M &p) const { return M(*this) *= p; }
+    M operator/(const M &p) const { return M(*this) /= p; }
+    bool operator==(const M &p) const { return val == p.val; }
+    bool operator!=(const M &p) const { return val != p.val; }
     M pow(ll n) const {
         if (n < 0) return inv().pow(-n);
         M ret(1), mul(val);

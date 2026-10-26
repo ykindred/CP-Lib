@@ -1,36 +1,34 @@
-#include <bits/stdc++.h>
-using namespace std;
-using ll = long long;
-
-constexpr int N = 1'000'000;
+#pragma once
+#include "../head.hpp"
+// ok
 constexpr int PIN = 78'498;
-bitset<N + 5> not_prime;
-int primes[PIN + 5], pcnt = 0;
-// 1e9 : 50'847'534
+inline bitset<N + 5> not_prime;
+inline int primes[PIN + 5], pcnt = 0;
 // 1e8 : 5'761'455
 // 1e7 : 664'579
 // 1e6 : 78'498
 // 1e5 : 9'592
 // 1e4 : 1'229
 // 1e3 : 168
-// 1e2 : 25
-// 1e1 : 4
-// 下界N / log(N), 上界(>61000时) N / (log(N) - 1.1)",
+// N > 61000时不超过 N / (log(N) - 1.1)
 
-// int minp[N + 5]; // 最小质因子
+inline int minp[N + 5]; // 最小质因子
 // int phi[N + 5]; // 欧拉函数
 // int mu[N + 5]; // 莫比乌斯函数
 // int d[N + 5], times[N + 5]; // 约数计数函数
 // ll sigma[N + 5]; int g[N + 5]; // 约数和函数
-void sieve() {
+
+// O(N)
+inline void sieve() {
+    not_prime[0] = not_prime[1] = 1;
     // phi[1] = 1;
     // mu[1] = 1;
     // d[1] = 1;
     // sigma[1] = 1;
-    for (int i = 2; i <= N; i++) {
+    for (ll i = 2; i <= N; i++) {
         if (!not_prime[i]) {
             primes[pcnt] = i, pcnt++;
-            // minp[i] = i;
+            minp[i] = i;
             // phi[i] = i - 1;
             // mu[i] = -1;
             // d[i] = 2, times[i] = 1;
@@ -39,7 +37,7 @@ void sieve() {
         for (int j = 0; j < pcnt && i * primes[j] <= N; j++) {
             int pj = primes[j];
             not_prime[i * pj] = 1;
-            // minp[i * pj] = pj;
+            minp[i * pj] = pj;
             if (i % primes[j] == 0) {
                 // phi[i * pj] = phi[i] * pj;
                 // mu[i * pj] = 0;
@@ -53,4 +51,18 @@ void sieve() {
             // sigma[i * pj] = sigma[i] * sigma[pj], g[i * pj] = pj + 1;
         }
     }
+}
+
+// O(log x), requires 1 <= x <= N
+inline vector<pair<ll, int>> prime_factor(ll x) {
+    vector<pair<ll, int>> ret;
+    while (x > 1) {
+        if (ret.empty() || ret.back().first != minp[x]) {
+            ret.push_back({ minp[x], 1 });
+        } else {
+            ret.back().second++;
+        }
+        x /= minp[x];
+    }
+    return ret;
 }

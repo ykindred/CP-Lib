@@ -275,6 +275,41 @@ vector<ll> get_primes(ll l, ll r) {
 
 ```
 
+## 类欧几里得算法
+求$\sum_{i = 0}^{n - 1} floor(\frac{ai+b}{m})$.
+```cpp
+ll floor_div(ll a, ll m) {
+    ll q = a / m;
+    ll r = a % m;
+    if (r < 0) --q;
+    return q;
+}
+
+ll F(ll n, ll m, ll a, ll b) {
+    // sum_{i=0}^{n-1} floor((a*i+b)/m)
+    if (n == 0) {
+        return 0;
+    }
+    ll ret = 0;
+    ll qa = floor_div(a, m);
+    ll qb = floor_div(b, m);
+    ret += qa * n * (n - 1) / 2;
+    ret += qb * n;
+    a -= qa * m;
+    b -= qb * m;
+    if (a == 0) {
+        return ret;
+    }
+    ll Y = (a * (n - 1) + b) / m;
+    if (Y == 0) {
+        return ret;
+    }
+    ret += n * Y;
+    ret -= F(Y, a, m, m + a - b - 1);
+    return ret;
+}
+```
+
 ## Miller-Rabin
 ```cpp
 bool primetest(ll n) {

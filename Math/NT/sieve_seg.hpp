@@ -1,13 +1,14 @@
-#include <bits/stdc++.h>
-using namespace std;
-using ll = long long;
+#pragma once
+#include "../head.hpp"
+// ok
 constexpr ll R = 1'000'000'300;
 constexpr int SQR = 32'000;
-constexpr int PIS = 4'000;
+constexpr int PIS = 4'000; // pi(SQR)
 // sqrt(10) < 3.17
-bitset<SQR + 5> not_prime;
-int primes[PIS + 5], pcnt = 0;
-void init_sieve() {
+inline bitset<SQR + 5> not_prime;
+inline int primes[PIS + 5], pcnt = 0;
+// O(SQRloglogSQR)
+inline void init_sieve() {
     not_prime[0] = not_prime[1] = 1;
     for (ll i = 2; i * i <= R; i++) {
         if (!not_prime[i]) {
@@ -20,10 +21,18 @@ void init_sieve() {
     }
 }
 
-vector<ll> get_primes(ll l, ll r) {
+// O(PIS + (r-l)loglogr)
+inline vector<ll> get_primes(ll l, ll r) {
+    if (l >= r) {
+        return {};
+    }
+    r--;
     vector<bool> notp(r - l + 1);
     if (l == 0) {
-        notp[0] = notp[1] = 1;
+        notp[0] = 1;
+        if (r >= 1) {
+            notp[1] = 1;
+        }
     } else if (l == 1) {
         notp[0] = 1;
     }
@@ -33,8 +42,9 @@ vector<ll> get_primes(ll l, ll r) {
         if (p * p > r) {
             break;
         }
-        for (ll j = max(2LL, (l + p - 1) / p); j * p <= r; j++) {
-            notp[j * p - l] = 1;
+        ll st = max(p * p, (l + p - 1) / p * p);
+        for (ll j = st; j <= r; j += p) {
+            notp[j - l] = 1;
         }
     }
     vector<ll> ret;
