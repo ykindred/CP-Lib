@@ -1,0 +1,359 @@
+{
+  "schema_version": 1,
+  "updated_on": "2026-10-26",
+  "description": "数学部分的实际打印收录清单，由 tools/gen_print.py 读取；下划线模板保留参考标记。",
+  "path_base": "repository_root",
+  "code_entries": [
+    {
+      "chapter": "数学",
+      "group": "公共定义",
+      "title": "公共头文件",
+      "path": "Math/head.hpp",
+      "reference": false
+    },
+    {
+      "chapter": "数学",
+      "group": "数论",
+      "title": "模运算类",
+      "path": "Math/NT/modint.hpp",
+      "reference": false
+    },
+    {
+      "chapter": "数学",
+      "group": "数论",
+      "title": "模运算与整数整除工具",
+      "path": "Math/NT/tools.hpp",
+      "reference": false
+    },
+    {
+      "chapter": "数学",
+      "group": "数论",
+      "title": "扩展欧几里得与不定方程",
+      "path": "Math/NT/exgcd.hpp",
+      "reference": false
+    },
+    {
+      "chapter": "数学",
+      "group": "数论",
+      "title": "扩展中国剩余定理",
+      "path": "Math/NT/excrt.hpp",
+      "reference": false
+    },
+    {
+      "chapter": "数学",
+      "group": "数论",
+      "title": "试除分解与约数枚举",
+      "path": "Math/NT/factor.hpp",
+      "reference": false
+    },
+    {
+      "chapter": "数学",
+      "group": "数论",
+      "title": "Miller-Rabin 素性测试",
+      "path": "Math/NT/primetest.hpp",
+      "reference": false
+    },
+    {
+      "chapter": "数学",
+      "group": "数论",
+      "title": "线性筛",
+      "path": "Math/NT/sieve.hpp",
+      "reference": false
+    },
+    {
+      "chapter": "数学",
+      "group": "数论",
+      "title": "扩展线性筛",
+      "path": "Math/NT/sieve_ext.hpp",
+      "reference": false
+    },
+    {
+      "chapter": "数学",
+      "group": "数论",
+      "title": "分段筛",
+      "path": "Math/NT/sieve_seg.hpp",
+      "reference": false
+    },
+    {
+      "chapter": "数学",
+      "group": "数论",
+      "title": "类欧几里得求和",
+      "path": "Math/NT/euclid_like.hpp",
+      "reference": false
+    },
+    {
+      "chapter": "数学",
+      "group": "数论",
+      "title": "BSGS 与扩展 BSGS",
+      "path": "Math/NT/BSGS.hpp",
+      "reference": false
+    },
+    {
+      "chapter": "数学",
+      "group": "数论",
+      "title": "Pollard-Rho 分解（参考）",
+      "path": "Math/NT/_pollard_rho.hpp",
+      "reference": true
+    },
+    {
+      "chapter": "数学",
+      "group": "数论",
+      "title": "由质因数分解生成约数（参考）",
+      "path": "Math/NT/_divisors.hpp",
+      "reference": true
+    },
+    {
+      "chapter": "数学",
+      "group": "数论",
+      "title": "莫比乌斯函数与欧拉函数筛（参考）",
+      "path": "Math/NT/_mobius.hpp",
+      "reference": true
+    },
+    {
+      "chapter": "数学",
+      "group": "数论",
+      "title": "杜教筛（参考）",
+      "path": "Math/NT/_dujiao_sieve.hpp",
+      "reference": true
+    },
+    {
+      "chapter": "数学",
+      "group": "数论",
+      "title": "数论分块与带权求和（参考）",
+      "path": "Math/NT/_quotient_blocks.hpp",
+      "reference": true
+    },
+    {
+      "chapter": "数学",
+      "group": "数论",
+      "title": "整除变换与最大公约数、最小公倍数卷积（参考）",
+      "path": "Math/NT/_divisor_transform.hpp",
+      "reference": true
+    },
+    {
+      "chapter": "数学",
+      "group": "数论",
+      "title": "Tonelli-Shanks 模平方根（参考）",
+      "path": "Math/NT/_mod_sqrt.hpp",
+      "reference": true
+    },
+    {
+      "chapter": "数学",
+      "group": "数论",
+      "title": "exLucas 合数模组合数（参考）",
+      "path": "Math/NT/_exlucas.hpp",
+      "reference": true
+    },
+    {
+      "chapter": "数学",
+      "group": "组合计数",
+      "title": "阶乘、组合数与 Lucas",
+      "path": "Math/Comb/factorial.hpp",
+      "reference": false
+    },
+    {
+      "chapter": "数学",
+      "group": "组合计数",
+      "title": "斯特林数",
+      "path": "Math/Comb/stirling.hpp",
+      "reference": false
+    },
+    {
+      "chapter": "数学",
+      "group": "组合计数",
+      "title": "错排、拆分、Bell、Catalan 与树计数（参考）",
+      "path": "Math/Comb/_numbers.hpp",
+      "reference": true
+    },
+    {
+      "chapter": "数学",
+      "group": "组合计数",
+      "title": "Burnside、项链与手链（参考）",
+      "path": "Math/Comb/_burnside.hpp",
+      "reference": true
+    },
+    {
+      "chapter": "数学",
+      "group": "组合计数",
+      "title": "Prüfer 编解码（参考）",
+      "path": "Math/Comb/_prufer.hpp",
+      "reference": true
+    },
+    {
+      "chapter": "数学",
+      "group": "多项式与线性递推",
+      "title": "FFT",
+      "path": "Math/Poly/FFT.hpp",
+      "reference": false
+    },
+    {
+      "chapter": "数学",
+      "group": "多项式与线性递推",
+      "title": "NTT 与原根",
+      "path": "Math/Poly/NTT.hpp",
+      "reference": false
+    },
+    {
+      "chapter": "数学",
+      "group": "多项式与线性递推",
+      "title": "三模 NTT 与精确整数卷积",
+      "path": "Math/Poly/MTT.hpp",
+      "reference": false
+    },
+    {
+      "chapter": "数学",
+      "group": "多项式与线性递推",
+      "title": "多模 NTT 与 Garner 合并",
+      "path": "Math/Poly/MTT_large.hpp",
+      "reference": false
+    },
+    {
+      "chapter": "数学",
+      "group": "多项式与线性递推",
+      "title": "按位卷积",
+      "path": "Math/Poly/FWHT.hpp",
+      "reference": false
+    },
+    {
+      "chapter": "数学",
+      "group": "多项式与线性递推",
+      "title": "多项式与形式幂级数运算",
+      "path": "Math/Poly/poly_major.hpp",
+      "reference": false
+    },
+    {
+      "chapter": "数学",
+      "group": "多项式与线性递推",
+      "title": "BM 与 Kitamasa 线性递推（参考）",
+      "path": "Math/Poly/_linear_recurrence.hpp",
+      "reference": true
+    },
+    {
+      "chapter": "数学",
+      "group": "多项式与线性递推",
+      "title": "Bostan-Mori 与快速线性递推（参考）",
+      "path": "Math/Poly/_bostan_mori.hpp",
+      "reference": true
+    },
+    {
+      "chapter": "数学",
+      "group": "多项式与线性递推",
+      "title": "连续点插值与幂和（参考）",
+      "path": "Math/Poly/_lagrange.hpp",
+      "reference": true
+    },
+    {
+      "chapter": "数学",
+      "group": "多项式与线性递推",
+      "title": "Taylor shift 多项式平移（参考）",
+      "path": "Math/Poly/_taylor_shift.hpp",
+      "reference": true
+    },
+    {
+      "chapter": "数学",
+      "group": "多项式与线性递推",
+      "title": "子集卷积（参考）",
+      "path": "Math/Poly/_subset_convolution.hpp",
+      "reference": true
+    },
+    {
+      "chapter": "数学",
+      "group": "线性代数、数值积分与博弈",
+      "title": "高斯消元",
+      "path": "Math/Alg/gauss.hpp",
+      "reference": false
+    },
+    {
+      "chapter": "数学",
+      "group": "线性代数、数值积分与博弈",
+      "title": "矩阵与矩阵快速幂（参考）",
+      "path": "Math/Alg/_Matrix.hpp",
+      "reference": true
+    },
+    {
+      "chapter": "数学",
+      "group": "线性代数、数值积分与博弈",
+      "title": "异或线性基（参考）",
+      "path": "Math/Alg/_linear_basis.hpp",
+      "reference": true
+    },
+    {
+      "chapter": "数学",
+      "group": "线性代数、数值积分与博弈",
+      "title": "行列式（参考）",
+      "path": "Math/Alg/_determinant.hpp",
+      "reference": true
+    },
+    {
+      "chapter": "数学",
+      "group": "线性代数、数值积分与博弈",
+      "title": "矩阵求逆（参考）",
+      "path": "Math/Alg/_matrix_inverse.hpp",
+      "reference": true
+    },
+    {
+      "chapter": "数学",
+      "group": "线性代数、数值积分与博弈",
+      "title": "异或高斯消元（参考）",
+      "path": "Math/Alg/_gauss_xor.hpp",
+      "reference": true
+    },
+    {
+      "chapter": "数学",
+      "group": "线性代数、数值积分与博弈",
+      "title": "矩阵树定理（参考）",
+      "path": "Math/Alg/_kirchhoff.hpp",
+      "reference": true
+    },
+    {
+      "chapter": "数学",
+      "group": "线性代数、数值积分与博弈",
+      "title": "自适应 Simpson 积分（参考）",
+      "path": "Math/Alg/_integrate.hpp",
+      "reference": true
+    },
+    {
+      "chapter": "数学",
+      "group": "线性代数、数值积分与博弈",
+      "title": "Nim 与 SG（参考）",
+      "path": "Math/Alg/_sg.hpp",
+      "reference": true
+    },
+    {
+      "chapter": "计算几何",
+      "group": "二维基础",
+      "title": "二维几何基础",
+      "path": "Math/CG/base.hpp",
+      "reference": false
+    },
+    {
+      "chapter": "计算几何",
+      "group": "二维基础",
+      "title": "极角排序",
+      "path": "Math/CG/polar_sort.hpp",
+      "reference": false
+    }
+  ],
+  "prose_entries": [
+    {
+      "chapter": "数学",
+      "title": "数学知识点",
+      "path": "Math/_notes.md",
+      "mode": "full_document",
+      "heading_shift": 1
+    },
+    {
+      "chapter": "计算几何",
+      "title": "几何参考资料",
+      "path": "Math/CG/CG.md",
+      "mode": "full_document",
+      "heading_shift": 0
+    }
+  ],
+  "maintenance_only": [
+    "Math/_templates.md"
+  ],
+  "legacy_references": [
+    "Math/Math.md"
+  ]
+}

@@ -1,86 +1,42 @@
 #pragma once
-#include <bits/stdc++.h>
-using namespace std;
-using ll = long long;
-using i128 = __int128;
+#include "_mobius.hpp"
 
+// 预筛小范围并缓存大查询，用于求莫比乌斯函数、欧拉函数的前缀和。
+// 构造时传入预筛上限，随后调用 getsmu 或 getsphi；预筛数组沿用 MobiusSieve。
+struct DuJiao : MobiusSieve {
+    unordered_map<ll, ll> mp_mu;
+    unordered_map<ll, i128> mp_phi;
+    // 传入正预筛上限 n，建立筛表和空查询缓存；预处理时间、空间均为 $O(n)$。
+    DuJiao(int n = 1'000'000) : MobiusSieve(n) {}
 
-
-constexpr int N = 1'000'000;
-constexpr int PIN = 78'498;
-bitset<N + 5> not_prime;
-int primes[PIN + 5], pcnt = 0;
-int phi[N + 5];
-int mu[N + 5];
-ll smu[N + 5];   // mu 前缀和
-ll sphi[N + 5];  // phi 前缀和，小范围内 ll 足够
-unordered_map<ll, ll> mp_mu;
-unordered_map<ll, i128> mp_phi;
-void sieve() {
-    phi[1] = 1;
-    mu[1] = 1;
-    for (int i = 2; i <= N; i++) {
-        if (!not_prime[i]) {
-            primes[pcnt] = i, pcnt++;
-            phi[i] = i - 1;
-            mu[i] = -1;
+    // 传入非负上限 x，返回从一到 x 的莫比乌斯函数之和，结果类型为 ll。
+    ll getsmu(ll x) {
+        assert(x >= 0);
+        if (x <= n) return smu[x];
+        auto it = mp_mu.find(x);
+        if (it != mp_mu.end()) return it->second;
+        i128 ret = 1;
+        for (ll l = 2, r; l <= x; l = r + 1) {
+            ll q = x / l;
+            r = x / q;
+            ret -= (i128)(r - l + 1) * getsmu(q);
+            if (r == x) break;
         }
-        for (int j = 0; j < pcnt && 1LL * i * primes[j] <= N; j++) {
-            int pj = primes[j];
-            not_prime[i * pj] = 1;
-
-            if (i % pj == 0) {
-                phi[i * pj] = phi[i] * pj;
-                mu[i * pj] = 0;
-                break;
-            }
-
-            phi[i * pj] = phi[i] * (pj - 1);
-            mu[i * pj] = -mu[i];
+        return mp_mu[x] = (ll)ret;
+    }
+    // 传入非负上限 x，返回从一到 x 的欧拉函数之和，结果类型为 i128。
+    i128 getsphi(ll x) {
+        assert(x >= 0);
+        if (x <= n) return sphi[x];
+        auto it = mp_phi.find(x);
+        if (it != mp_phi.end()) return it->second;
+        i128 ret = (i128)x * ((i128)x + 1) / 2;
+        for (ll l = 2, r; l <= x; l = r + 1) {
+            ll q = x / l;
+            r = x / q;
+            ret -= (i128)(r - l + 1) * getsphi(q);
+            if (r == x) break;
         }
+        return mp_phi[x] = ret;
     }
-
-    for (int i = 1; i <= N; i++) {
-        smu[i] = smu[i - 1] + mu[i];
-        sphi[i] = sphi[i - 1] + phi[i];
-    }
-}
-
-ll getsmu(ll n) {
-    // 莫比乌斯函数的前缀和
-    if (n <= N) {
-        return smu[n];
-    }
-    if (mp_mu.count(n)) {
-        return mp_mu[n];
-    }
-
-    ll ans = 1;
-
-    for (ll l = 2, r; l <= n; l = r + 1) {
-        ll q = n / l;
-        r = n / q;
-        ans -= (r - l + 1) * getsmu(q);
-    }
-    return mp_mu[n] = ans;
-}
-
-i128 getsphi(ll n) {
-    // 欧拉函数的前缀和
-    if (n <= N) {
-        return sphi[n];
-    }
-    if (mp_phi.count(n)) {
-        return mp_phi[n];
-    }
-
-    i128 ans = (i128)n * (n + 1) / 2;
-
-    for (ll l = 2, r; l <= n; l = r + 1) {
-        ll q = n / l;
-        r = n / q;
-        ans -= (i128)(r - l + 1) * getsphi(q);
-    }
-
-    return mp_phi[n] = ans;
-}
+};

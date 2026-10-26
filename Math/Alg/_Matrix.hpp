@@ -1,68 +1,79 @@
-template<typename T,int Rols,int Cols>
-class Matrix{
-private:
-    vector<vector<T>> inside_value;
-public:
-    Matrix();
-    template<typename U,int N1,int N2,int N3>
-    friend Matrix<U,N1,N3> operator*(const Matrix<U,N1,N2>&LEFT_M,const Matrix<U,N2,N3>&RIGHT_M);
+#pragma once
+#include "../head.hpp"
+#include "../NT/modint.hpp"
 
-    friend Matrix<T,Rols,Cols> operator+(const Matrix<T,Rols,Cols>&LEFT_M,const Matrix<T,Rols,Cols>&RIGHT_M);
-    friend Matrix<T,Rols,Cols> operator-(const Matrix<T,Rols,Cols>&LEFT_M,const Matrix<T,Rols,Cols>&RIGHT_M);
-    vector<T>& operator[](int poi){
-        return this->inside_value[poi];
+// 存储矩阵并提供加减、乘法和非负整数次幂；Z 是元素类型。
+// 可使用 mint、ll 或浮点类型；整数运算须保证结果不溢出。
+template <typename Z>
+struct Matrix {
+    int n, m;
+    vector<vector<Z>> a;
+    // 传入非负行数 n、列数 m，构造一个全零矩阵。
+    Matrix(int n, int m) : n(n), m(m), a(n, vector<Z>(m)) {}
+    // 传入各行等长的二维数组 a，以其内容构造矩阵；空数组表示空矩阵。
+    Matrix(vector<vector<Z>> a) : n(a.size()), m(n ? a[0].size() : 0), a(move(a)) {}
+    // 传入行下标 i，返回该行的引用，可直接读写元素。
+    vector<Z>& operator[](int i) { return a[i]; }
+    // 传入行下标 i，返回该行的只读引用。
+    const vector<Z>& operator[](int i) const { return a[i]; }
+
+    // 传入阶数 n，返回 n 阶单位矩阵。
+    static Matrix identity(int n) {
+        Matrix ret(n, n);
+        for (int i = 0; i < n; i++) ret[i][i] = 1;
+        return ret;
     }
-    const vector<T>& operator[](int poi) const{
-        return this->inside_value[poi];
+    // 传入同型矩阵 b，返回逐项相加的结果，不修改原矩阵。
+    Matrix operator+(const Matrix& b) const {
+        assert(n == b.n && m == b.m);
+        Matrix ret = *this;
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m; j++) ret[i][j] += b[i][j];
+        }
+        return ret;
+    }
+    // 传入同型矩阵 b，返回逐项相减的结果，不修改原矩阵。
+    Matrix operator-(const Matrix& b) const {
+        assert(n == b.n && m == b.m);
+        Matrix ret = *this;
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m; j++) ret[i][j] -= b[i][j];
+        }
+        return ret;
+    }
+    
+    // 传入行数等于当前列数的矩阵 b，返回矩阵乘积。
+    // 按行访问并跳过零系数；时间为 $O(nmq)$，q 是 b 的列数。
+    Matrix operator*(const Matrix& b) const {
+        assert(m == b.n);
+        Matrix ret(n, b.m);
+        for (int i = 0; i < n; i++) {
+            for (int k = 0; k < m; k++) {
+                Z t = a[i][k];
+                if (t == Z(0)) continue;
+                for (int j = 0; j < b.m; j++) ret[i][j] += t * b[k][j];
+            }
+        }
+        return ret;
+    }
+    // 传入长度为 m 的列向量 b，返回矩阵与列向量的乘积。
+    vector<Z> operator*(const vector<Z>& b) const {
+        assert(m == (int)b.size());
+        vector<Z> ret(n);
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m; j++) ret[i] += a[i][j] * b[j];
+        }
+        return ret;
+    }
+    
+    // 传入非负整数 k，返回当前方阵的 k 次幂；零次幂为单位矩阵。
+    // 要求当前矩阵为方阵，时间为 $O(n^3\log k)$。
+    Matrix pow(ll k) const {
+        assert(n == m && k >= 0);
+        Matrix ret = identity(n), mul = *this;
+        for (; k; k >>= 1, mul = mul * mul) {
+            if (k & 1) ret = ret * mul;
+        }
+        return ret;
     }
 };
-//以下是成员函数的具体实现
-template<typename T,int Rols,int Cols>
-Matrix<T,Rols,Cols>::Matrix()
-{
-    this->inside_value.resize(Rols,vector<T>(Cols));
-    return;
-}
-template<typename T,int N1,int N2,int N3>
-Matrix<T,N1,N3> operator*(const Matrix<T,N1,N2>& LEFT_M,const Matrix<T,N2,N3>&RIGHT_M)
-{
-    Matrix<T,N1,N3> ret;
-    for(int i = 0;i<N1;i++)
-    {
-        for(int j = 0;j<N3;j++)
-        {
-            T total = 0;
-            for(int k = 0;k<N2;k++)
-                total += LEFT_M[i][k]*  RIGHT_M[k][j];
-            ret[i][j] = total;
-        }
-    }
-    return ret;
-}
-template<typename T,int Rols,int Cols>
-Matrix<T,Rols,Cols> operator+(const Matrix<T,Rols,Cols>&LEFT_M,const Matrix<T,Rols,Cols>&RIGHT_M)
-{
-    Matrix<T,Rols,Cols> ret;
-    for(int i = 0;i<Rols;i++)
-    {
-        for(int j = 0;j<Cols;j++)
-        {
-            ret[i][j] = LEFT_M[i][j] + RIGHT_M[i][j];
-        }
-    }
-    return ret;
-}
-template<typename T,int Rols,int Cols>
-Matrix<T,Rols,Cols> operator-(const Matrix<T,Rols,Cols>&LEFT_M,const Matrix<T,Rols,Cols>&RIGHT_M)
-{
-    Matrix<T,Rols,Cols> ret;
-    for(int i = 0;i<Rols;i++)
-    {
-        for(int j = 0;j<Cols;j++)
-        {
-            ret[i][j] = LEFT_M[i][j] - RIGHT_M[i][j];
-        }
-    }
-    return ret;
-}
-//Matrix<ll,5,5> mat

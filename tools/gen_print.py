@@ -9,12 +9,15 @@
 
 用法：
     python tools/gen_print.py            # 生成全部章节
-    python tools/gen_print.py --check    # 只检查：列出没有归入打印版的源文件
+    python tools/gen_print.py --check    # 检查清单、缺失文件和未归入打印版的源码
 """
 
 import argparse
+import json
 import os
 import re
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -111,78 +114,156 @@ CH_STRING = ("字符串", "String", [
     ("Lyndon 分解（Duval）", "Lyndon.cpp"),
 ])
 
-CH_MATH = ("数学", "Math", [
-    ("组合数（阶乘预处理）", "Combinatorics/base.hpp"),
-    ("ModInt 模运算类", "NumberTheory/modint.hpp"),
-    ("exGCD 扩展欧几里得", "NumberTheory/exgcd.hpp"),
-    ("exCRT 扩展中国剩余定理", "NumberTheory/excrt.hpp"),
-    ("线性筛", "NumberTheory/sieve.hpp"),
-    ("扩展线性筛（积性函数）", "NumberTheory/sieve_ext.hpp"),
-    ("分段筛", "NumberTheory/sieve_seg.hpp"),
-    ("Miller-Rabin 素性测试", "NumberTheory/primetest.hpp"),
-    ("Pollard-rho 质因数分解", "NumberTheory/PollardRho.cpp"),
-    ("BSGS 离散对数", "NumberTheory/BSGS.cpp"),
-    ("杜教筛", "NumberTheory/dujiao_sieve.hpp"),
-    ("FFT", "Polynomial/FFT.cpp"),
-    ("NTT", "Polynomial/NTT.cpp"),
-    ("三模 NTT", "Polynomial/NTT_3mod.cpp"),
-    ("MTT（任意模数）", "Polynomial/MTT.cpp"),
-    ("FWT / FMT", "Polynomial/FWT.cpp"),
-    ("多项式求导积分", "Polynomial/Derivative.cpp"),
-    ("多项式求逆", "Polynomial/Inverse.cpp"),
-    ("多项式除法", "Polynomial/Division.cpp"),
-    ("多项式开根", "Polynomial/Sqrt.cpp"),
-    ("多项式指数 / 对数", "Polynomial/ExpLog.cpp"),
-    ("多项式快速幂", "Polynomial/Pow.cpp"),
-    ("多点求值", "Polynomial/MultiEval.cpp"),
-    ("快速插值", "Polynomial/Interpolation.cpp"),
-    ("快速阶乘", "Polynomial/FastFactorial.cpp"),
-    ("多点快速阶乘", "Polynomial/FastFactorialMulti.cpp"),
-    ("矩阵与列向量", "Templates/Matrix.hpp"),
-    ("高斯消元（整数）", "LinearAlgebra/GaussianElim_int.cpp"),
-    ("高斯消元（实数）", "LinearAlgebra/GaussianElim_real.cpp"),
-    ("高斯消元（异或）", "LinearAlgebra/GaussianElim_xor.cpp"),
-    ("异或线性基", "LinearAlgebra/XORBasis.cpp"),
-])
-
-CH_CG = ("计算几何", "ComputationalGeometry", [
-    ("二维几何基础库（base.hpp）", "base.hpp"),
-    ("极角排序", "polar_sort.hpp"),
-    ("平面几何杂项（sgn / cmp / 读入）", "Geometry_util.cpp"),
-    ("平面点线运算", "Point_line_ops.cpp"),
-    ("平面直线方程转换", "Line_equation.cpp"),
-    ("平面三角形相关（四心）", "Triangle_center.cpp"),
-    ("平面圆相关（交点 / 切线 / 相交面积）", "Circle_ops.cpp"),
-    ("平面多边形补充（Pick 定理 / 网格点）", "Polygon_extra.cpp"),
-    ("二维凸包（Andrew）", "Convex_hull.cpp"),
-    ("二维动态凸包", "Dynamic_convex_hull.cpp"),
-    ("旋转卡壳", "Rotating_calipers.cpp"),
-    ("平面最近点对", "Closest_pair.cpp"),
-    ("闵可夫斯基和", "Minkowski_sum.cpp"),
-    ("半平面交", "Half_plane_intersection.cpp"),
-    ("三维几何：点线面封装与基础判定", "Geometry_3D_base.cpp"),
-    ("三维几何：相交判定与交点", "Geometry_3D_intersect.cpp"),
-    ("三维几何：距离、夹角与体积", "Geometry_3D_distance.cpp"),
-])
-
 CH_MISC = ("杂项", ".", [
     ("离散化", "Miscellaneous/Discretization.cpp"),
     ("欧拉序（子树转区间）", "Miscellaneous/GenerateEulerTourOrder.cpp"),
     ("反转整数", "Miscellaneous/ReverseInt.cpp"),
-    ("防卡哈希表", "Miscellaneous/hashtable.hpp"),
+    ("防卡哈希表（BSGS 依赖）", "DataStructure/hashtable.hpp"),
     ("快读快写（FinFout）", "Miscellaneous/FinFout.cpp"),
+    ("随机数生成（RNG）", "Miscellaneous/RNG.hpp"),
+    ("赛时对拍脚本（stress.py）", "Miscellaneous/stress.py"),
 ])
 
-CHAPTERS = [CH_GRAPH, CH_DS, CH_STRING, CH_MATH, CH_CG, CH_MISC]
+# 杂项正文单独登记；数学和几何正文由数学清单提供。
+OTHER_TEXT_SOURCES = [
+    {"chapter": "杂项", "title": "赛时对拍使用说明", "path": "Miscellaneous/stress.md",
+     "mode": "full_document", "heading_shift": 1},
+]
+
+# 数学与几何基础条目由清单提供，运行时配置，避免保留另一份手写目录。
+CHAPTERS = []
+FULL_TEXT_SOURCES = []
+
+
+def configure_chapters():
+    """读取数学清单，校验输入路径和参考身份，更新代码章节与全文正文配置。"""
+    global CHAPTERS, FULL_TEXT_SOURCES
+    path = ROOT / "docs" / "math-print-manifest.json"
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(manifest, dict) or manifest.get("schema_version") != 1 or manifest.get("path_base") != "repository_root":
+        raise ValueError("数学清单的版本或路径基准不正确")
+
+    def source(rel):
+        """接收仓库相对路径，返回实际文件；拒绝越出 Math 目录或缺失的文件。"""
+        if not isinstance(rel, str) or Path(rel).is_absolute():
+            raise ValueError(f"清单需要相对路径：{rel}")
+        target = (ROOT / rel).resolve()
+        try:
+            target.relative_to((ROOT / "Math").resolve())
+        except ValueError:
+            raise ValueError(f"清单路径不在 Math 目录内：{rel}") from None
+        if not target.is_file():
+            raise ValueError(f"清单文件不存在：{rel}")
+        if not target.read_text(encoding="utf-8").strip():
+            raise ValueError(f"清单文件为空：{rel}")
+        return target
+
+    entries = {"数学": [], "计算几何": []}
+    seen = set()
+    for entry in manifest["code_entries"]:
+        rel, title, chapter = entry["path"], entry["title"], entry["chapter"]
+        if not isinstance(title, str) or not title.strip():
+            raise ValueError(f"打印标题不能为空：{rel}")
+        target = source(rel)
+        if target in seen:
+            raise ValueError(f"清单重复收录：{rel}")
+        seen.add(target)
+        if target.suffix != ".hpp" or chapter not in entries:
+            raise ValueError(f"不支持的数学代码条目：{rel}")
+        reference = target.name.startswith("_")
+        if type(entry["reference"]) is not bool or entry["reference"] != reference:
+            raise ValueError(f"参考标记与文件名不符：{rel}")
+        if reference and "（参考）" not in title:
+            title += "（参考）"
+        entries[chapter].append((title, target.relative_to(ROOT.resolve()).as_posix()))
+
+    missing = {p.resolve() for p in (ROOT / "Math").rglob("*.hpp")} - seen
+    if missing:
+        names = ", ".join(sorted(p.relative_to(ROOT.resolve()).as_posix() for p in missing))
+        raise ValueError(f"数学清单遗漏头文件：{names}")
+
+    prose = manifest["prose_entries"]
+    prose_seen = set()
+    for entry in prose:
+        if not isinstance(entry["title"], str) or not entry["title"].strip():
+            raise ValueError(f"正文标题不能为空：{entry['path']}")
+        target = source(entry["path"])
+        if target in prose_seen or entry["chapter"] not in entries:
+            raise ValueError(f"重复或无效的正文条目：{entry['path']}")
+        prose_seen.add(target)
+        if entry["mode"] != "full_document" or target.suffix != ".md":
+            raise ValueError(f"正文必须使用完整 Markdown：{entry['path']}")
+        shift = entry["heading_shift"]
+        if type(shift) is not int or not 0 <= shift <= 4:
+            raise ValueError(f"正文标题降级必须在 0 到 4 之间：{entry['path']}")
+    if not any((ROOT / entry["path"]).resolve() == (ROOT / "Math" / "_notes.md").resolve()
+               and entry["chapter"] == "数学" for entry in prose):
+        raise ValueError("数学清单必须全文收录 Math/_notes.md")
+
+    geometry = entries["计算几何"]
+    CHAPTERS = [CH_GRAPH, CH_DS, CH_STRING, ("数学", ".", entries["数学"]),
+                ("计算几何", ".", geometry), CH_MISC]
+    FULL_TEXT_SOURCES = prose + OTHER_TEXT_SOURCES
+
+
+def prepare_images(markdown):
+    """接收 Markdown，将远程示意图改用已有打印缓存，返回可直接排版的正文。"""
+    def image(url):
+        """接收图片地址，返回本地图片引用；缓存缺失时明确报错。"""
+        if not url.startswith(("https://", "http://")):
+            return f"![]({url})"
+        name = url.split("?", 1)[0].rsplit("/", 1)[-1]
+        if not (ROOT / "print" / "assets" / name).is_file():
+            raise RuntimeError(f"缺少打印图片缓存：print/assets/{name}，来源：{url}")
+        return f"![](assets/{name}){{width=86%}}"
+
+    markdown = re.sub(r'!\[[^\]]*\]\((https?://[^)]+)\)',
+                      lambda m: image(m.group(1)), markdown)
+    return re.sub(r'<img\b[^>]*?src="([^\"]+)"[^>]*?/?>',
+                  lambda m: image(m.group(1)), markdown, flags=re.I)
+
+
+def emit_full_text(entry):
+    """接收全文正文条目，调用 Pandoc，返回保留标题、列表、链接和公式的 LaTeX 行。"""
+    pandoc = shutil.which("pandoc")
+    if not pandoc:
+        raise RuntimeError("找不到 pandoc，无法转换 Markdown 正文；请安装并加入 PATH")
+    path = ROOT / entry["path"]
+    markdown = prepare_images(path.read_text(encoding="utf-8"))
+    # 清单指定打印标题，保留原开头标题的级别，不重复插入标题。
+    heading = re.match(r"^(#{1,6}) +[^\n]*", markdown)
+    if heading:
+        markdown = heading.group(1) + " " + entry["title"] + markdown[heading.end():]
+    else:
+        markdown = "# " + entry["title"] + "\n\n" + markdown
+    result = subprocess.run(
+        [pandoc, "--from=markdown+tex_math_dollars", "--to=latex", "--wrap=none", "--listings",
+         f"--shift-heading-level-by={entry['heading_shift']}"],
+        input=markdown, encoding="utf-8", stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        cwd=path.parent,
+    )
+    if result.returncode:
+        raise RuntimeError(f"正文转换失败：{entry['path']}\n{result.stderr.strip()}")
+    if result.stderr.strip():
+        print(result.stderr.strip(), file=sys.stderr)
+    # Pandoc 完整模板中的列表与行内代码辅助命令，需要在片段中补上定义。
+    return ["", r"\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}",
+            r"\providecommand{\passthrough}[1]{#1}", *result.stdout.splitlines()]
+
+
+def missing_sources():
+    """检查全部代码和全文正文，返回所属章节及缺失文件的相对路径列表。"""
+    sources = [(title, (Path(folder) / rel).as_posix())
+               for title, folder, entries in CHAPTERS for _, rel in entries]
+    sources += [(entry["chapter"], entry["path"]) for entry in FULL_TEXT_SOURCES]
+    return [(title, rel) for title, rel in sources if not (ROOT / rel).is_file()]
+
 
 # 每个章节末尾追加的「结论与技巧」，从对应 .md 里按标题抓
 CONCLUSION_SOURCES = {
     "图论": "GraphTheory/Graph.md",
     "数据结构": "DataStructure/DataStructure.md",
     "字符串": "String/String.md",
-    "数学": "Math/Math.md",
-    # 几何的结论已单独整理到 Conclusion.md（CG.md 是旧稿）
-    "计算几何": "ComputationalGeometry/Conclusion.md",
 }
 CONCLUSION_PAT = re.compile(r"(结论|技巧|注意|速查|归档|性质)")
 
@@ -325,8 +406,12 @@ def emit_chapter(title, folder, entries):
             empty.append(rel)
             continue
         out.append("\\subsection{%s}" % sub)
+        if folder == "." and rel.startswith("Math/"):
+            source_path = (ROOT / folder / rel).relative_to(ROOT).as_posix()
+            out.append(r"\noindent{\small " + render_prose("`" + source_path + "`") + r"}\par")
         out.append("")
-        out.append("\\begin{lstlisting}")
+        language = "[language=Python]" if path.suffix == ".py" else ""
+        out.append("\\begin{lstlisting}" + language)
         out.extend(code.split("\n"))
         out.append("\\end{lstlisting}")
         out.append("")
@@ -347,9 +432,11 @@ def unlisted_sources():
     listed = listed_paths()
     out = []
     for p in sorted(ROOT.rglob("*")):
-        if not p.is_file() or p.suffix not in {".cpp", ".hpp", ".h"}:
+        if not p.is_file():
             continue
         rp = p.relative_to(ROOT).as_posix()
+        if p.suffix not in {".cpp", ".hpp", ".h"} and not (p.suffix == ".py" and rp.startswith("Miscellaneous/")):
+            continue
         if rp.startswith(("print/", "tools/")):
             continue
         if p.resolve() not in listed:
@@ -359,57 +446,66 @@ def unlisted_sources():
 
 
 def main():
+    """处理命令行，检查收录情况或生成全部章节；失败时返回非零状态。"""
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true",
-                    help="只列出未归入打印版的源文件，不写文件")
+                    help="检查数学清单、缺失文件和未收录源码，不写文件")
     args = ap.parse_args()
+    try:
+        configure_chapters()
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        print(f"[数学清单错误] {exc}", file=sys.stderr)
+        return 1
 
+    missing = missing_sources()
+    if missing:
+        print("[缺失] 配置里列了但文件不存在：", file=sys.stderr)
+        for title, rel in missing:
+            print(f"    {title}: {rel}", file=sys.stderr)
+    unlisted = unlisted_sources()
     if args.check:
-        unlisted = unlisted_sources()
         print("=== 未归入打印版的源文件 ===")
         if not unlisted:
             print("    （无）")
-        for rp, n in unlisted:
-            print(f"    {rp}   ({n} 行)")
-        return 1 if unlisted else 0
+        for rel, n in unlisted:
+            print(f"    {rel}   ({n} 行)")
+        return 1 if missing or unlisted else 0
+    if missing:
+        return 1
+
+    # 先完成所有转换，确认成功后再写入，避免转换失败时留下半套章节。
+    slugs = {
+        "图论": "01-graph", "数据结构": "02-datastructure", "字符串": "03-string",
+        "数学": "04-math", "计算几何": "05-geometry", "杂项": "06-misc",
+    }
+    outputs, empty = [], []
+    try:
+        for title, folder, entries in CHAPTERS:
+            body, _, skipped = emit_chapter(title, folder, entries)
+            body += emit_conclusions(title, CONCLUSION_SOURCES.get(title, ""))
+            for entry in FULL_TEXT_SOURCES:
+                if entry["chapter"] == title:
+                    body += emit_full_text(entry)
+            outputs.append((slugs[title] + ".tex", title, "\n".join(body).rstrip() + "\n"))
+            empty.extend((title, rel) for rel in skipped)
+    except (OSError, RuntimeError) as exc:
+        print(f"[生成失败] {exc}", file=sys.stderr)
+        return 1
 
     OUTDIR.mkdir(parents=True, exist_ok=True)
-    total_missing, total_empty = [], []
-    for title, folder, entries in CHAPTERS:
-        body, missing, empty = emit_chapter(title, folder, entries)
-        body += emit_conclusions(title, CONCLUSION_SOURCES.get(title, ""))
-        slug = {
-            "图论": "01-graph", "数据结构": "02-datastructure", "字符串": "03-string",
-            "数学": "04-math", "计算几何": "05-geometry", "杂项": "06-misc",
-        }[title]
-        text = "\n".join(body).rstrip() + "\n"
-        # 显式指定 \n：Path.write_text 在 Windows 上默认会翻译成 CRLF，
-        # 导致生成物和仓库里已有的 LF 版本整文件 diff。
-        (OUTDIR / (slug + ".tex")).write_text(text, encoding="utf-8", newline="\n")
-        n = text.count("\n")
-        print(f"{slug+'.tex':<26}{n:>6} 行   {title}")
-        total_missing += [(title, m) for m in missing]
-        total_empty += [(title, m) for m in empty]
-
-    if total_missing:
-        print("\n[缺失] 配置里列了但文件不存在：")
-        for t, m in total_missing:
-            print(f"    {t}: {m}")
-    if total_empty:
+    for filename, title, text in outputs:
+        (OUTDIR / filename).write_text(text, encoding="utf-8", newline="\n")
+        print(f"{filename:<26}{text.count(chr(10)):>6} 行   {title}")
+    if empty:
         print("\n[空文件] 已跳过：")
-        for t, m in total_empty:
-            print(f"    {t}: {m}")
-
-    # 新增源文件但忘了写进章节配置时，打印版会静默漏掉它；每次生成后都提醒一下。
-    unlisted = unlisted_sources()
+        for title, rel in empty:
+            print(f"    {title}: {rel}")
     if unlisted:
         print("\n[提示] 以下源文件未归入打印版：")
-        for rp, n in unlisted:
-            print(f"    {rp}   ({n} 行)")
-        print("    要收进 PDF，请把它们加到本文件顶部的章节配置里。")
-
-    # 配置里写了但文件不存在，多半是改名/移动后忘了更新配置；让调用方中止。
-    return 1 if total_missing else 0
+        for rel, n in unlisted:
+            print(f"    {rel}   ({n} 行)")
+        print("    数学文件请更新 docs/math-print-manifest.json，其他源码请更新章节配置。")
+    return 0
 
 
 if __name__ == "__main__":

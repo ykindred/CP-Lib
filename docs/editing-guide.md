@@ -8,6 +8,17 @@
 
 更完整的项目说明见仓库根目录的 `README.md`。
 
+## 数学目录调整后的维护入口
+
+数学源码已改用 `Math/NT/`、`Math/Comb/`、`Math/Poly/`、`Math/Alg/` 和 `Math/CG/`。当前有 47 份头文件，其中 24 份以下划线标记，仍属于参考或待审核模板。打印范围包含这些参考文件与 `Math/_notes.md`，并保留参考身份。
+
+完整目录和接入步骤见 [数学打印同步说明](math-printing.md)，逐文件清单见 `docs/math-print-manifest.json`。`Math/_templates.md` 用于查找接口；`Math/Math.md` 和 `Math/CG/CG.md` 只作历史参考。
+
+打印脚本已直接读取新清单，数学知识点由 Pandoc 全文转换。新增或改名数学模板时应维护清单，其他专题仍维护脚本中的章节配置。原 `ComputationalGeometry/` 目录已删除，计算几何章收录 `Math/CG/` 中的两份基础头文件和 `CG.md` 全文。杂项章另收录 `stress.py` 和 `stress.md`，分别作为 Python 代码与使用说明。
+
+本次未重建配套指南 PDF，阅读维护说明时请以本 Markdown 为准。
+
+
 # 先分清三类文件
 
 | 类型 | 位置 | 说明 |
@@ -17,7 +28,7 @@
 | 打印版章节（生成物） | `print/chapters/*.tex` | 由脚本生成，手改会在下次生成时被覆盖 |
 
 专题目录包括 `GraphTheory/`、`DataStructure/`、`String/`、`Math/`、
-`ComputationalGeometry/`、`Miscellaneous/`。
+`Miscellaneous/`；计算几何基础保存在 `Math/CG/`。
 
 一条命令完成“源码 → 章节 → PDF”：
 
@@ -53,6 +64,8 @@ python tools/build_print.py --no-gen
 
 ## 新增一个模板
 
+数学模板请在 `docs/math-print-manifest.json` 中登记，字段与示例见 [数学打印说明](math-printing.md)。以下脚本配置示例用于其他专题。
+
 1. 在对应目录新建 `.cpp/.hpp`，例如 `GraphTheory/NewAlgo.cpp`。
 2. 打开 `tools/gen_print.py`，在对应章节的配置里加一行：
 
@@ -77,7 +90,7 @@ python tools/build_print.py
     GraphTheory/NewAlgo.cpp   (42 行)
 ```
 
-也可以单独检查：
+也可以单独检查未列入配置的代码文件：
 
 ```bash
 python tools/build_print.py --check
@@ -103,7 +116,7 @@ python tools/build_print.py --check
 
 ## 改「结论与技巧」
 
-每章末尾的「结论与技巧」是生成器从 `.md` 里抓的：标题中含
+图论、数据结构和字符串章末尾的「结论与技巧」由生成器从 `.md` 中提取：标题中含
 「结论 / 技巧 / 注意 / 速查 / 归档 / 性质」的小节会被收进来，子标题会降级保留。
 
 对应关系：
@@ -113,11 +126,15 @@ python tools/build_print.py --check
 | 图论 | `GraphTheory/Graph.md` |
 | 数据结构 | `DataStructure/DataStructure.md` |
 | 字符串 | `String/String.md` |
-| 数学 | `Math/Math.md` |
-| 计算几何 | `ComputationalGeometry/Conclusion.md` |
-| 杂项 | 无（不抓取） |
+| 数学 | `Math/_notes.md`，由 Pandoc 全文转换 |
+| 计算几何 | `Math/CG/CG.md`，全文收录代码、说明、公式和示意图 |
+| 杂项 | `Miscellaneous/stress.md`，全文收录使用说明与代码示例 |
 
-改完 `.md` 后运行 `python tools/build_print.py` 即可。结论里的代码块会被丢弃，只保留文字、公式、列表和图片。
+图论、数据结构和字符串改完 `.md` 后，按现有规则运行 `python tools/build_print.py`。旧提取器会丢弃结论中的代码块，只保留选中的文字、公式、列表和图片。
+
+数学的 `_notes.md`、几何的 `CG.md` 和对拍的 `stress.md` 都不按标题关键词筛选，而是全文转换。生成器保留标题、公式和代码块，并使用现有 `listings` 排版代码。几何图像引用 `print/assets/` 中的本地缓存，缺图时会报告具体路径。修改正文后正常构建即可。
+
+`Miscellaneous/stress.py` 作为独立源码条目打印，使用 Python 高亮。`Miscellaneous/hashtable.hpp` 已删除，列表中只保留 `DataStructure/hashtable.hpp`。
 
 # build_print.py 的参数
 
@@ -125,7 +142,7 @@ python tools/build_print.py --check
 |---|---|
 | `python tools/build_print.py` | 改完模板源码后：重新生成章节 + 编译 |
 | `python tools/build_print.py --no-gen`（`-n`） | 只改了 `print/` 下的排版时：跳过生成，直接编译 |
-| `python tools/build_print.py --check`（`-c`） | 只列出还没归入打印版的源文件；有遗漏时返回非 0 |
+| `python tools/build_print.py --check`（`-c`） | 检查数学清单、缺失路径和未收录代码；有错误或遗漏时返回非 0 |
 | `python tools/build_print.py --clean` | 清理所有编译中间文件、`main.pdf` 和 Python 缓存，保留 PDF |
 | `python tools/build_print.py --open`（`-o`） | 编译完成后自动打开 PDF |
 
@@ -199,20 +216,26 @@ basicstyle=\ttfamily\fontsize{8.2}{9.9}\selectfont,
 
 ## 中文注释
 
-代码里的中文注释使用黑体（SimHei），随代码字号缩放；不需要额外处理。
+代码里的中文注释使用黑体（SimHei），随代码字号缩放。源码由 `lstlisting` 逐字打印，其中的 LaTeX 公式仍显示为源码；知识点 Markdown 的公式则应作为正文渲染。
+
+接口注释应简要说明用途、输入和返回值。正文行内公式使用单美元符号，独立公式使用双美元符号；行内代码使用单反引号，代码块使用三反引号。
 
 # 速查表
 
 | 我想…… | 改哪里 | 然后运行 |
 |---|---|---|
 | 改模板代码 | 对应的 `.cpp/.hpp` | `python tools/build_print.py` |
-| 加模板 | 新源文件 + `tools/gen_print.py` 配置 | `python tools/build_print.py` |
-| 改模板标题/顺序 | `tools/gen_print.py` 配置 | `python tools/build_print.py` |
+| 加模板 | 新源文件 + 数学清单或其他章节配置 | `python tools/build_print.py` |
+| 改模板标题/顺序 | 数学清单或其他章节配置 | `python tools/build_print.py` |
 | 改字号/颜色/边距 | `print/preamble.tex` | `python tools/build_print.py --no-gen` |
 | 改封面/目录 | `print/main.tex` + `print/preamble.tex` | `python tools/build_print.py --no-gen` |
 | 改结论与技巧 | 对应目录的 `.md` | `python tools/build_print.py` |
 
 # 常见问题
+
+## 生成数学正文时提示找不到 pandoc
+
+安装 Pandoc 并加入 `PATH`。数学知识点需要完整的 Markdown 转换，不能绕过正文后继续生成缺页的打印版。
 
 ## 编译失败，提示找不到 latexmk
 
@@ -236,7 +259,9 @@ latexmk print/main.tex
 
 ## 新模板没有出现在 PDF 里
 
-检查 `tools/gen_print.py` 的章节配置里有没有它。运行 `--check` 可以看到所有未归入打印版的源文件。
+检查 `tools/gen_print.py` 的章节配置里有没有它。下划线文件也必须登记，打印标题会保留“参考”标记。运行 `--check` 会检查数学清单及正文路径、全部章节的缺失源码，并列出未收录的代码。正文公式的实际转换则在生成时完成。
+
+对于数学部分，核对 `docs/math-print-manifest.json` 的路径、标题与参考标记，生成器会据此更新输出。
 
 ## 目录或页码不对
 

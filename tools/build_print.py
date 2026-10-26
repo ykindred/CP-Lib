@@ -13,10 +13,10 @@
 日常修改流程：
     1. 改模板源码（GraphTheory/*.cpp、DataStructure/...、Math/... 等）。
        —— 这些源文件是唯一正本，print/chapters/*.tex 是生成物，不要手改。
-    2. 新增模板时，把 (标题, 相对路径) 加到 tools/gen_print.py 顶部的章节配置。
+    2. 数学模板登记到 docs/math-print-manifest.json，其他模板登记到章节配置。
     3. 运行本脚本，产物是 print/CP-Lib.pdf。
 
-需要：Python 3.8+、TeX Live（latexmk + XeLaTeX）。
+需要：Python 3.8+、Pandoc、TeX Live（latexmk + XeLaTeX）。
 """
 
 import argparse
@@ -144,7 +144,7 @@ def main():
     ap.add_argument("-n", "--no-gen", "--no_gen", action="store_true",
                     help="不运行 gen_print.py，直接用现有 print/chapters/*.tex 编译")
     ap.add_argument("-c", "--check", action="store_true",
-                    help="只列出未归入打印版的源文件；有遗漏时返回非 0")
+                    help="检查数学清单、缺失路径和未收录源码；有错误或遗漏时返回非 0")
     ap.add_argument("--clean", action="store_true",
                     help="清理所有编译中间文件（保留 PDF）")
     ap.add_argument("-o", "--open", action="store_true",

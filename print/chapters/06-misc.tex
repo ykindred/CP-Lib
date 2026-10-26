@@ -121,24 +121,24 @@ static inline __int128 reverse_int128(__int128 x) {
 }
 \end{lstlisting}
 
-\subsection{防卡哈希表}
+\subsection{防卡哈希表（BSGS 依赖）}
 
 \begin{lstlisting}
+#pragma once
 #include <bits/stdc++.h>
+using u64 = unsigned long long;
 using namespace std;
-using ull = unsigned long long;
 #include <ext/pb_ds/assoc_container.hpp>
 #include <ext/pb_ds/tree_policy.hpp>
 struct chash {
-    static ull splitmix64(ull x) {
+    static u64 splitmix64(u64 x) {
         x += 0x9e3779b97f4a7c15;
         x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9;
         x = (x ^ (x >> 27)) * 0x94d049bb133111eb;
         return x ^ (x >> 31);
     }
-
-    size_t operator()(ull x) const {
-        static const ull F = 
+    size_t operator()(u64 x) const {
+        static const u64 F = 
             chrono::steady_clock::now().time_since_epoch().count();
         return splitmix64(x + F);
     }
@@ -228,5 +228,124 @@ static inline __int128 readInt() {
         c = getCharRaw();
     }
     return sign * x;
+}
+\end{lstlisting}
+
+\subsection{随机数生成（RNG）}
+
+\begin{lstlisting}
+// random number giver
+inline u64 RNG_64() {
+    static u64 x_ = u64(chrono::duration_cast<chrono::nanoseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count()) * 10150724397891781847ULL;
+    x_ ^= x_ << 7;
+    return x_ ^= x_ >> 9;
+}
+// gives random number of [0, lim)
+inline u64 RNG(u64 lim) { return RNG_64() % lim; }
+// gives random number of [l, r)
+inline ll RNG(ll l, ll r) { return l + RNG_64() % (r - l); }
+\end{lstlisting}
+
+\subsection{赛时对拍脚本（stress.py）}
+
+\begin{lstlisting}[language=Python]
+#!/usr/bin/env python3
+# python3 stress.py          : std vs brute（不限制时间）
+# python3 stress.py time 2   : 只测 std，2 秒超时
+import subprocess as sp
+import sys
+import time
+from pathlib import Path
+
+root = Path(__file__).resolve().parent
+if len(sys.argv) == 1:
+    limit = None
+elif len(sys.argv) == 3 and sys.argv[1] == 'time':
+    try:
+        limit = float(sys.argv[2])
+        assert limit > 0
+    except (ValueError, AssertionError):
+        sys.exit('用法: python3 stress.py [time 秒数]')
+else:
+    sys.exit('用法: python3 stress.py [time 秒数]')
+
+for name in (('gen', 'std') if limit else ('gen', 'std', 'brute')):
+    if sp.run(['g++', f'{name}.cpp', '-std=c++17', '-O2', '-o', name], cwd=root).returncode:
+        sys.exit(1)
+
+mx = 0.0
+try:
+    for i in range(1, 10**18):
+        gen = sp.run(['./gen'], cwd=root, stdout=sp.PIPE)
+        if gen.returncode:
+            sys.exit(f'gen RE #{i}')
+        data = gen.stdout
+        if limit:
+            t = time.perf_counter()
+        try:
+            a = sp.run(['./std'], cwd=root, input=data,
+                       stdout=sp.DEVNULL if limit else sp.PIPE, timeout=limit)
+        except sp.TimeoutExpired:
+            (root / 'failed.in').write_bytes(data)
+            sys.exit(f'TLE #{i} (> {limit}s), see failed.in')
+        if limit:
+            mx = max(mx, time.perf_counter() - t)
+        if a.returncode:
+            (root / 'failed.in').write_bytes(data)
+            sys.exit(f'std RE #{i}, see failed.in')
+        if not limit:
+            b = sp.run(['./brute'], cwd=root, input=data, stdout=sp.PIPE)
+            if b.returncode or a.stdout.split() != b.stdout.split():
+                (root / 'failed.in').write_bytes(data)
+                (root / 'std.out').write_bytes(a.stdout)
+                (root / 'brute.out').write_bytes(b.stdout)
+                sys.exit(f'WA/RE #{i}, see failed.in, std.out, brute.out')
+        if i % 100 == 0:
+            print(f'{i} OK' + (f', max {mx:.3f}s' if limit else ''), flush=True)
+except KeyboardInterrupt:
+    print('\nStopped')
+\end{lstlisting}
+
+
+\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\providecommand{\passthrough}[1]{#1}
+\hypertarget{ux8d5bux65f6ux5bf9ux62cdux4f7fux7528ux8bf4ux660e}{%
+\subsection{赛时对拍使用说明}\label{ux8d5bux65f6ux5bf9ux62cdux4f7fux7528ux8bf4ux660e}}
+
+在同一目录放 4 个文件：
+
+\begin{lstlisting}
+problem/
+├── stress.py   # 对拍脚本（本文件配套）
+├── std.cpp     # 你要检查的程序
+├── brute.cpp   # 可信的暴力/正确解
+└── gen.cpp     # 随机数据生成器
+\end{lstlisting}
+
+打开终端，进入该目录：
+
+\begin{lstlisting}[language=bash]
+cd /path/to/problem
+python3 stress.py
+# 或者, 保证std正确, 只验证时限(无需brute):
+python3 stress.py time 2
+\end{lstlisting}
+
+\begin{lstlisting}[language={C++}]
+// gen.cpp
+#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+    mt19937 rng(42);
+    auto rnd = [&](int l, int r) {
+        return uniform_int_distribution<int>(l, r)(rng);
+    };
+
+    int n = rnd(1, 30);
+    cout << n << '\n';
+    for (int i = 0; i < n; ++i) {
+        cout << rnd(-10, 10) << " \n"[i == n - 1];
+    }
 }
 \end{lstlisting}
